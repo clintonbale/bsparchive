@@ -10,7 +10,7 @@
 #include "common.h"
 
 const char* stream;
-Token token;
+EntityToken token;
 
 void next_token() {
 repeat:

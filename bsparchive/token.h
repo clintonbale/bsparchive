@@ -2,29 +2,29 @@
 #include <stdbool.h>
 #include "common.h"
 
-typedef enum TokenType {
+typedef enum EntityTokenType {
 	TOKEN_BEGIN_ENT,
 	TOKEN_END_ENT,
 	TOKEN_STR,
 	TOKEN_NULL
-} TokenType;
+} EntityTokenType;
 
 typedef struct Token {
-	TokenType type;
+	EntityTokenType type;
 	const char* start;
 	const char* end;
-} Token;
+} EntityToken;
 
 const char* stream;
-Token token;
+EntityToken token;
 
 void next_token();
 
-inline bool is_token(TokenType type) {
+inline bool is_token(EntityTokenType type) {
 	return token.type == type;
 }
 
-inline bool match_token(TokenType type) {
+inline bool match_token(EntityTokenType type) {
 	if (is_token(type)) {
 		next_token();
 		return true;
@@ -32,7 +32,7 @@ inline bool match_token(TokenType type) {
 	return false;
 }
 
-inline bool expect_token(TokenType type) {
+inline bool expect_token(EntityTokenType type) {
 	if (is_token(type)) {
 		next_token();
 		return true;

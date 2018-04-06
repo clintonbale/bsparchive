@@ -6,103 +6,16 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "argtable3.h"
+
 #include "common.h"
 #include "token.h"
 #include <ctype.h>
 
-typedef struct bsplump {
-	int32_t offset;
-	int32_t length;
-} bsplump;
+#include "bsp.h"
+#include "tinydir.h"
 
-typedef struct bspheader {
-	int32_t version;
-	bsplump lump[15];
-} bspheader;
-
-#define LUMP_ENTITIES 0
-#define ENT_MAX_KEY 32
-#define ENT_MAX_VALUE 1024
-
-bspheader* bsp_open(char* path) {
-	assert(path != NULL);
-	FILE* fp = fopen(path, "rb");
-	if (fp == NULL) {
-		perror("Error opening bsp");
-		exit(1);
-	}
-
-	fseek(fp, 0, SEEK_END);
-	size_t file_size = ftell(fp);
-	rewind(fp);
-
-	char* buf = xmalloc(file_size * sizeof(char));
-	size_t size_read = fread(buf, sizeof(char), file_size, fp);
-	assert(size_read == file_size);
-
-	fclose(fp);
-	return (bspheader*)buf;
-}
-
-void bsp_read_ent_value(char* key, char* value);
-void bsp_read_ent_values(char* key, char* value);
-
-void bsp_get_dependencies() {
-	char key[ENT_MAX_KEY];
-	char value[ENT_MAX_VALUE];
-
-	next_token();
-	while (match_token(TOKEN_BEGIN_ENT)) {
-		while (is_token(TOKEN_STR)) {
-			strncpy(key, token.start, token.end - token.start);
-			key[token.end - token.start] = 0;
-
-			expect_token(TOKEN_STR);
-
-			strncpy(value, token.start, token.end - token.start);
-			value[token.end - token.start] = 0;
-
-			bsp_read_ent_values(key, value);
-			next_token();
-		}
-		expect_token(TOKEN_END_ENT);
-	}
-}
-
-void bsp_read_ent_values(char* key, char* value) {
-	char* last = value;
-	char* end = strchr(value, ';');
-	if (end) { 
-		// multiple values potentially delimited by semicolon
-		do { 
-			size_t len = end - last;
-			last[len] = 0;
-			bsp_read_ent_values(key, last);
-
-			last = last + len + 1;
-			end = strchr(last, ';');
-		} while (end);
-		bsp_read_ent_value(key, last);
-	}
-	else { 
-		// a single value
-		bsp_read_ent_value(key, value);
-	}
-}
-
-void normalize_path(char* file_path) {
-	assert(file_path != NULL);
-
-	while(*file_path) {
-		if (isalpha(*file_path))
-			*file_path = tolower(*file_path);
-		else if(*file_path == '\\')
-			*file_path = '/';
-		file_path++;
-	}
-}
-
-const char* formats[] = {
+const char* const formats[] = {
 	".mdl",
 	".wav",
 	".spr",
@@ -111,25 +24,7 @@ const char* formats[] = {
 	".bmp",
 	".txt",
 };
-
-bool valid_format(const char* fmt) {
-	for (int i = 0; i < COUNT_OF(formats); i++) {
-		if (strcmp(fmt, formats[i]) == 0) {
-			return true;
-		}
-	}
-	return false;
-}
-
-void add_dependency(char* value) {
-	normalize_path(value);
-
-	// todo: copy value to new list
-	// todo: duplicate detection
-	printf("dependency: %s\n", value);
-}
-
-const char* gfx_sides[] = {
+const char* const gfx_sides[] = {
 	"up.tga",
 	"dn.tga",
 	"lf.tga",
@@ -137,48 +32,184 @@ const char* gfx_sides[] = {
 	"ft.tga",
 	"bk.tga"
 };
+const char* const speak_keys[] = {
+	"speak",
+	"team_speak",
+};
 
-void bsp_read_ent_value(char* key, char* value) {
+bool valid_resource_format(const char* fmt) {
+	for (int i = 0; i < COUNT_OF(formats); i++) {
+		if (strcmp(fmt, formats[i]) == 0) {
+			return true;
+		}
+	}
+	return false;
+}
+bool is_speak_key(const char* key) {
+	for (int i = 0; i < COUNT_OF(speak_keys); i++) {
+		if (strcmp(key, speak_keys[i]) == 0) {
+			return true;
+		}
+	}
+	return false;
+}
+
+void add_dependency(char* value);
+
+
+void normalize_value(char* file_path) {
+	assert(file_path != NULL);
+
+	while (*file_path) {
+		if (isalpha(*file_path))
+			*file_path = tolower(*file_path);
+		else if (*file_path == '\\')
+			*file_path = '/';
+		file_path++;
+	}
+}
+
+void parse_bsp_ent_value(char* key, char* value) {
 	assert(key != NULL);
 	assert(value != NULL);
+	if (!value[0]) return;
+
+	normalize_value(value);
+
+	char buf[1024] = "";
 
 	char* extension = strrchr(value, '.');
-	if(strcmp(key, "skyname") == 0) {
-		char buf[1024] = "gfx/env/";
+	if (strcmp(key, "skyname") == 0) {
+		strcat(buf, "gfx/env/");
 		strcat(buf, value);
 
 		size_t len = strlen(buf), side_len = COUNT_OF(gfx_sides);
-		while(side_len--) {
+		while (side_len--) {
 			buf[len] = 0;
 			strcat(buf, gfx_sides[side_len]);
 			add_dependency(buf);
 		}
 	}
-	else if(strcmp(key, "wad") == 0) {
-		// ...
-		normalize_path(value);
-		printf("wad: %s\n", value);
+	else if (strcmp(key, "wad") == 0) {
+		add_dependency(value);
 	}
-	else if(extension) {
-		if (valid_format(extension)) {
-			add_dependency(value);
+	else if (is_speak_key(key)) {
+		// TODO: handle speak sentences
+		printf("Speak sentence: %s", value);
+	}
+	else if (extension) {
+		if (valid_resource_format(extension)) {
+			if (strcmp(extension, ".wav") == 0) {
+				strcat(buf, "sound/");
+				strcat(buf, value);
+				add_dependency(buf);
+			}
+			else {
+				add_dependency(value);
+			}
 		}
-		else {
-			// ...
+		else if (strlen(extension) >= 4) {
+			// if verbose
+			printf("Unknown file format '%s' - ignoring '%s'\n", extension, value);
 		}
 	}
 }
 
+char** deps = NULL;
+
+void add_dependency(char* value) {
+	for(int i = 0; i < buf_len(deps); ++i) {
+		if (strcmp(deps[i], value) == 0)
+			return;
+	}
+	buf_push(deps, strdup(value));
+
+	printf("dependency: %s\n", value);
+}
+
+void do_bsp(char* bsp_path) {
+	bspheader* bsp = bsp_open(bsp_path);
+	assert(bsp->version == 30);
+	
+	stream = (char*)((char*)bsp + bsp->lump[LUMP_ENTITIES].offset);
+	bsp_read_entities(parse_bsp_ent_value);
+
+	size_t len = buf_len(deps);
+	for (int i = 0; i < len; ++i) {
+		char* dependency = deps[i];
+		// TODO: ...
+	}
+
+	buf_clear(deps);
+	free(bsp);
+}
+
+bool verbose = false;
+
+
+struct arg_lit *verb, *help, *ver;
+struct arg_file *gamedir, *file, *output;
+struct arg_end *end;
+
 int main(int argc, char* argv[]) {
+	const char* progname = "bsparchive";
+	const char* version = "0.1";
+
 	token_test();
 
-	bspheader* bsp = bsp_open(argv[1]);
-	assert(bsp->version == 30);
+	void *argtable[] = {
+		help = arg_litn("h", "help", 0, 1, "print this help and exit"),
+		verb = arg_litn("v", "verbose", 0, 1, "verbose output"),
+		ver = arg_litn("V", "version", 0, 1, "print version information and exit"),
+		gamedir = arg_filen("g", "gamedir", "<PATH>", 0, 1, "the game directory"),
+		output = arg_filen("o", "output", "<PATH>", 1, 1, "where to output the zip files"),
+		file = arg_filen(NULL, NULL, "<PATH>", 1, 100, "bsp files or map directories"),
+		end = arg_end(20),
+	};
 
-	stream = (char*)((char*)bsp + bsp->lump[LUMP_ENTITIES].offset);
-	bsp_get_dependencies();
+	int exitcode;
 
-	free(bsp);
+	int nerrors;
+	nerrors = arg_parse(argc, argv, argtable);
+
+	if (help->count > 0)
+	{
+		printf("%s %s\nUsage: %s", progname, version, progname);
+		arg_print_syntax(stdout, argtable, "\n");
+		printf("Identifies and archives all dependencies for bsp files.\n\n");
+		arg_print_glossary(stdout, argtable, "  %-25s %s\n");
+		
+		exitcode = 0;
+		goto exit;
+	}
+
+	if(ver->count > 0) {
+		printf("%s %s\n", progname, version);
+		exitcode = 0;
+		goto exit;
+	}
+	
+
+	for (int i = 0; i < file->count; i++) {
+		printf("file = %s\n", file->filename[i]);
+		do_bsp(file->filename[i]);
+	}
+	for (int i = 0; i < output->count; i++) {
+		printf("out = %s\n", output->filename[i]);
+	}
+
+	//do_bsp(argv[1]);
+
+	//getchar();
+	if (nerrors > 0) {
+		arg_print_errors(stdout, end, progname);
+		printf("Try '%s --help' for more information.\n", progname);
+		exitcode = 1;
+		goto exit;
+	}
+
+exit:
+	arg_freetable(argtable, COUNT_OF(argtable));
 	getchar();
-	return 0;
+	return exitcode;
 }

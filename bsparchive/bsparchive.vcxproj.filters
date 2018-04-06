@@ -4,9 +4,14 @@
     <ClCompile Include="main.c" />
     <ClCompile Include="common.c" />
     <ClCompile Include="token.c" />
+    <ClCompile Include="bsp.c" />
+    <ClCompile Include="argtable3.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="token.h" />
     <ClInclude Include="common.h" />
+    <ClInclude Include="bsp.h" />
+    <ClInclude Include="tinydir.h" />
+    <ClInclude Include="argtable3.h" />
   </ItemGroup>
 </Project>
