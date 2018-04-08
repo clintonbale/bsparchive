@@ -8,7 +8,7 @@
 #include "token.h"
 #include "lib/tinydir.h"
 #include "archive.h"
-
+#include "lib/miniz.h"
 
 const char* const formats[] = {
 	".mdl",
@@ -52,15 +52,15 @@ bool is_speak_key(const char* key) {
 void add_dependency(char* value);
 
 
-void normalize_value(char* file_path) {
-	assert(file_path != NULL);
+void normalize_value(char* value) {
+	assert(value != NULL);
 
-	while (*file_path) {
-		if (isalpha(*file_path))
-			*file_path = tolower(*file_path);
-		else if (*file_path == '\\')
-			*file_path = '/';
-		file_path++;
+	while (*value) {
+		if (isalpha(*value))
+			*value = tolower(*value);
+		else if (*value == '\\')
+			*value = '/';
+		value++;
 	}
 }
 
@@ -126,36 +126,61 @@ void add_dependency(char* value) {
 	}
 	buf_push(deps, strdup(value));
 	if (g_verbose) {
-		printf("Found dependency: %s\n", value);
+		//printf("Found dependency: %s\n", value);
 	}
 }
 
-bool do_bsp(char* bsp_path) {
-	char* ents = bsp_open_entities(bsp_path);
-	if(!ents) {
+bool read_dependency(const char* path, void** data, size_t* data_len) {
+	bool success = true;
+	FILE* fp = fopen(path, "rb");
+	if (fp == NULL) {
+		printf("Dependency missing: %s\n", path);
+		//*data = NULL;
+		//*data_len = 0;
+		success = false;
 		goto exit;
 	}
-	stream = ents;	
-	bsp_read_entities(parse_bsp_ent_value);
-	stream = NULL;
+	
+	fseek(fp, 0, SEEK_END);
+	size_t size = ftell(fp);
+	fseek(fp, 0, SEEK_SET);
+	
+	*data = (void*)xmalloc(size + 1);
+	*data_len = size;
 
-	free(ents);
-
-	size_t len = buf_len(deps);
-	for (int i = 0; i < len; ++i) {
-		char* dependency = deps[i];
-
-		free(dependency);
+	if(fread((void*)*data, sizeof(char), size, fp) != size) {
+		printf("Error reading file %s\n", path);
+		*data = NULL;
+		*data_len = 0;
+		success = false;
+		goto exit;
 	}
-
 exit:
-	if(deps) buf_clear(deps);
+	if (fp) fclose(fp);
+	return success;
 }
 
-int archive_bsp_dir(const char* input, const char* output, const char* gamedir) {	
+
+char* get_full_path(const char* dependency, const char* gamedir) {
+	static char full_path[MAX_PATH];
+	full_path[0] = 0;
+	
+	strcat(full_path, gamedir);
+	if (*dependency != '/' && *dependency != '\\') {
+		strcat(full_path, "/");
+	}
+	strcat(full_path, dependency);
+
+	assert(strlen(full_path) < MAX_PATH);
+
+	return full_path;
+}
+
+int archive_bsp_dir(const char* input, const char* output, const char* gamedir) {
+	//TODO: enum on exit statuses
 	tinydir_dir dir;
 	tinydir_file file;
-	if(tinydir_open(&dir, input) != 0) {
+	if (tinydir_open(&dir, input) != 0) {
 		printf("Error opening directory %s\n", input);
 		return EXIT_FAILURE;
 	}
@@ -164,7 +189,7 @@ int archive_bsp_dir(const char* input, const char* output, const char* gamedir) 
 
 	printf("Archiving map directory %s\n", input);
 
-	while(dir.has_next) {
+	while (dir.has_next) {
 		tinydir_readfile(&dir, &file);
 		if (strncmp(file.extension, "bsp", 3) == 0) {
 			archive_bsp(file.path, output, gamedir);
@@ -172,14 +197,45 @@ int archive_bsp_dir(const char* input, const char* output, const char* gamedir) 
 		tinydir_next(&dir);
 	}
 	tinydir_close(&dir);
-	
+
 	return EXIT_SUCCESS;
 }
 
 int archive_bsp(const char* bsp_path, const char* output_path, const char* gamedir) {
+	//TODO: enum on exit statuses
+	int rc = EXIT_SUCCESS;
 	printf("Processing: %s\n", bsp_path);;
-	
-	do_bsp(bsp_path);
 
-	return EXIT_SUCCESS;
+	char* ents = bsp_open_entities(bsp_path);
+	if (!ents) {
+		rc = EXIT_FAILURE;
+		goto exit;
+	}
+	stream = ents;
+	bsp_read_entities(parse_bsp_ent_value);
+	
+	size_t len = buf_len(deps);
+	for (int i = 0; i < len; ++i) {
+		char* dependency = deps[i];
+		char* fullpath = get_full_path(dependency, gamedir);
+
+		void* data = NULL;
+		size_t data_len = 0;
+
+		if (read_dependency(fullpath, &data, &data_len)) {
+			printf("read the file! %s - %d\n", fullpath, data_len);
+			//TODO: zip it n ship it.
+		}
+	next:
+		if (data) free(data);
+		if (deps[i]) {
+			free(deps[i]);
+			deps[i] = NULL;
+		}
+	}
+exit:
+	stream = NULL;
+	if (ents) free(ents);
+	if (deps) buf_clear(deps);
+	return rc;
 }

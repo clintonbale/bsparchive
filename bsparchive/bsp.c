@@ -76,11 +76,13 @@ void bsp_read_entities(bsp_entity_reader reader) {
 		while (is_token(TOKEN_STR)) {
 			strncpy(key, token.start, token.end - token.start);
 			key[token.end - token.start] = 0;
-
+			assert(token.end - token.start < ENT_MAX_KEY);
+			
 			expect_token(TOKEN_STR);
 
 			strncpy(value, token.start, token.end - token.start);
 			value[token.end - token.start] = 0;
+			assert(token.end - token.start < ENT_MAX_VALUE);
 
 			bsp_read_ent_values(reader, key, value);
 			next_token();

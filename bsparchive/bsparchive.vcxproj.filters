@@ -7,6 +7,7 @@
     <ClCompile Include="bsp.c" />
     <ClCompile Include="archive.c" />
     <ClCompile Include="lib\argtable3.c" />
+    <ClCompile Include="lib\miniz.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="token.h" />
@@ -15,5 +16,6 @@
     <ClInclude Include="archive.h" />
     <ClInclude Include="lib\argtable3.h" />
     <ClInclude Include="lib\tinydir.h" />
+    <ClInclude Include="lib\miniz.h" />
   </ItemGroup>
 </Project>

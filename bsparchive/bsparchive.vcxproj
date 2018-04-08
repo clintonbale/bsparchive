@@ -103,16 +103,15 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>EnableAllWarnings</WarningLevel>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>false</IntrinsicFunctions>
-      <SDLCheck>true</SDLCheck>
+      <SDLCheck>false</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <ExceptionHandling>false</ExceptionHandling>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <CompileAs>CompileAsC</CompileAs>
-      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -139,6 +138,7 @@
     <ClCompile Include="lib\argtable3.c" />
     <ClCompile Include="bsp.c" />
     <ClCompile Include="common.c" />
+    <ClCompile Include="lib\miniz.c" />
     <ClCompile Include="main.c" />
     <ClCompile Include="token.c" />
   </ItemGroup>
@@ -147,6 +147,7 @@
     <ClInclude Include="lib\argtable3.h" />
     <ClInclude Include="bsp.h" />
     <ClInclude Include="common.h" />
+    <ClInclude Include="lib\miniz.h" />
     <ClInclude Include="lib\tinydir.h" />
     <ClInclude Include="token.h" />
   </ItemGroup>
