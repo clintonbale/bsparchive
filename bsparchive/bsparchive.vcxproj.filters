@@ -6,6 +6,7 @@
     <ClCompile Include="token.c" />
     <ClCompile Include="bsp.c" />
     <ClCompile Include="argtable3.c" />
+    <ClCompile Include="archive.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="token.h" />
@@ -13,5 +14,6 @@
     <ClInclude Include="bsp.h" />
     <ClInclude Include="tinydir.h" />
     <ClInclude Include="argtable3.h" />
+    <ClInclude Include="archive.h" />
   </ItemGroup>
 </Project>

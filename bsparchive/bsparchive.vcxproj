@@ -135,6 +135,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="archive.c" />
     <ClCompile Include="argtable3.c" />
     <ClCompile Include="bsp.c" />
     <ClCompile Include="common.c" />
@@ -142,6 +143,7 @@
     <ClCompile Include="token.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="archive.h" />
     <ClInclude Include="argtable3.h" />
     <ClInclude Include="bsp.h" />
     <ClInclude Include="common.h" />

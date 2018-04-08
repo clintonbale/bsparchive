@@ -3,213 +3,214 @@
 #include <stdint.h>
 #include <assert.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
+#include "archive.h"
 #include "argtable3.h"
-
-#include "common.h"
-#include "token.h"
-#include <ctype.h>
-
-#include "bsp.h"
 #include "tinydir.h"
+#include "common.h"
 
-const char* const formats[] = {
-	".mdl",
-	".wav",
-	".spr",
-	".wad",
-	".tga",
-	".bmp",
-	".txt",
-};
-const char* const gfx_sides[] = {
-	"up.tga",
-	"dn.tga",
-	"lf.tga",
-	"rt.tga",
-	"ft.tga",
-	"bk.tga"
-};
-const char* const speak_keys[] = {
-	"speak",
-	"team_speak",
-};
+bool g_verbose;
 
-bool valid_resource_format(const char* fmt) {
-	for (int i = 0; i < COUNT_OF(formats); i++) {
-		if (strcmp(fmt, formats[i]) == 0) {
-			return true;
-		}
-	}
-	return false;
-}
-bool is_speak_key(const char* key) {
-	for (int i = 0; i < COUNT_OF(speak_keys); i++) {
-		if (strcmp(key, speak_keys[i]) == 0) {
-			return true;
-		}
-	}
-	return false;
-}
-
-void add_dependency(char* value);
-
-
-void normalize_value(char* file_path) {
-	assert(file_path != NULL);
-
-	while (*file_path) {
-		if (isalpha(*file_path))
-			*file_path = tolower(*file_path);
-		else if (*file_path == '\\')
-			*file_path = '/';
-		file_path++;
-	}
-}
-
-void parse_bsp_ent_value(char* key, char* value) {
-	assert(key != NULL);
-	assert(value != NULL);
-	if (!value[0]) return;
-
-	normalize_value(value);
-
-	char buf[1024] = "";
-
-	char* extension = strrchr(value, '.');
-	if (strcmp(key, "skyname") == 0) {
-		strcat(buf, "gfx/env/");
-		strcat(buf, value);
-
-		size_t len = strlen(buf), side_len = COUNT_OF(gfx_sides);
-		while (side_len--) {
-			buf[len] = 0;
-			strcat(buf, gfx_sides[side_len]);
-			add_dependency(buf);
-		}
-	}
-	else if (strcmp(key, "wad") == 0) {
-		add_dependency(value);
-	}
-	else if (is_speak_key(key)) {
-		// TODO: handle speak sentences
-		printf("Speak sentence: %s", value);
-	}
-	else if (extension) {
-		if (valid_resource_format(extension)) {
-			if (strcmp(extension, ".wav") == 0) {
-				strcat(buf, "sound/");
-				strcat(buf, value);
-				add_dependency(buf);
-			}
-			else {
-				add_dependency(value);
-			}
-		}
-		else if (strlen(extension) >= 4) {
-			// if verbose
-			printf("Unknown file format '%s' - ignoring '%s'\n", extension, value);
-		}
-	}
-}
-
-char** deps = NULL;
-
-void add_dependency(char* value) {
-	for(int i = 0; i < buf_len(deps); ++i) {
-		if (strcmp(deps[i], value) == 0)
-			return;
-	}
-	buf_push(deps, strdup(value));
-
-	printf("dependency: %s\n", value);
-}
-
-void do_bsp(char* bsp_path) {
-	bspheader* bsp = bsp_open(bsp_path);
-	assert(bsp->version == 30);
-	
-	stream = (char*)((char*)bsp + bsp->lump[LUMP_ENTITIES].offset);
-	bsp_read_entities(parse_bsp_ent_value);
-
-	size_t len = buf_len(deps);
-	for (int i = 0; i < len; ++i) {
-		char* dependency = deps[i];
-		// TODO: ...
-	}
-
-	buf_clear(deps);
-	free(bsp);
-}
-
-bool verbose = false;
-
-
-struct arg_lit *verb, *help, *ver;
-struct arg_file *gamedir, *file, *output;
+struct arg_lit *a_verbose, *a_help, *a_version;
+struct arg_file *a_gamedir, *a_file, *a_output;
 struct arg_end *end;
+
+static bool is_valid_dir(const char* path) {
+	assert(path != NULL);
+	bool valid = false;
+
+	tinydir_dir dir;
+	tinydir_open(&dir, path);
+
+	valid = dir.has_next > 0;
+
+	tinydir_close(&dir);
+	return valid;
+}
+
+static bool is_valid_file(const char* filepath) {
+	assert(filepath != NULL);
+	bool valid = false;
+
+	FILE* file = fopen(filepath, "r");
+	if(file != NULL) {
+		fclose(file);
+		return true;
+	}
+	return false;	
+}
+
+static const char* gamedir_folders[] = {
+	"sound",
+	"gfx",
+	"sprites",
+	"models",
+	"maps",
+};
+
+#define GAMEDIR_PARENT_SEARCH_DEPTH 3
+#define GAMEDIR_VALID_MIN 2
+
+static bool is_valid_gamedir(const char* gamedir) {
+	tinydir_dir dir;
+	if (tinydir_open(&dir, gamedir) != 0)
+		return false;
+
+	size_t matches = 0;
+
+	while (dir.has_next) {
+		tinydir_file file;
+		tinydir_readfile(&dir, &file);
+
+		if (file.is_dir) {
+			for (int i = 0; i < COUNT_OF(gamedir_folders); i++) {
+				if (strcmp(file.name, gamedir_folders[i]) == 0) {
+					matches++;
+				}
+			}
+		}
+		tinydir_next(&dir);
+	}
+
+	return matches > GAMEDIR_VALID_MIN;
+}
+
+static void get_parent_dir(char* input) {
+	size_t len = strlen(input);
+	char* last = (char*)(input + len);
+	while (last != input && *last != '\\' && *last != '/') {
+		last--;
+	}
+	input[last - input] = 0;
+}
+
+static const char* find_gamedir(const char* input, bool is_input_dir) {
+	static char gamedir[MAX_PATH];
+	strcpy(gamedir, input);
+
+	size_t depth = 0;
+
+	while(depth++ < GAMEDIR_PARENT_SEARCH_DEPTH && gamedir[0] && !is_valid_gamedir(gamedir)) {		
+		get_parent_dir(gamedir);
+	}
+
+	return gamedir;
+}
 
 int main(int argc, char* argv[]) {
 	const char* progname = "bsparchive";
 	const char* version = "0.1";
-
-	token_test();
-
+	
 	void *argtable[] = {
-		help = arg_litn("h", "help", 0, 1, "print this help and exit"),
-		verb = arg_litn("v", "verbose", 0, 1, "verbose output"),
-		ver = arg_litn("V", "version", 0, 1, "print version information and exit"),
-		gamedir = arg_filen("g", "gamedir", "<PATH>", 0, 1, "the game directory"),
-		output = arg_filen("o", "output", "<PATH>", 1, 1, "where to output the zip files"),
-		file = arg_filen(NULL, NULL, "<PATH>", 1, 100, "bsp files or map directories"),
+		a_help = arg_litn("h", "help", 0, 1, "print this help and exit"),
+		a_verbose = arg_litn("v", "verbose", 0, 1, "verbose output"),
+		a_version = arg_litn("V", "version", 0, 1, "print version information and exit"),
+		a_gamedir = arg_filen("g", "gamedir", "<PATH>", 0, 1, "the game directory"),
+		a_output = arg_filen("o", "output", "<PATH>", 1, 1, "where to output the zip files"),
+		a_file = arg_filen(NULL, NULL, "<PATH>", 1, 1, "bsp files or map directories"),
 		end = arg_end(20),
 	};
 
-	int exitcode;
+	int rc;
 
 	int nerrors;
 	nerrors = arg_parse(argc, argv, argtable);
 
-	if (help->count > 0)
+	if (a_help->count > 0)
 	{
 		printf("%s %s\nUsage: %s", progname, version, progname);
 		arg_print_syntax(stdout, argtable, "\n");
 		printf("Identifies and archives all dependencies for bsp files.\n\n");
 		arg_print_glossary(stdout, argtable, "  %-25s %s\n");
 		
-		exitcode = 0;
+		rc = EXIT_SUCCESS;
 		goto exit;
 	}
 
-	if(ver->count > 0) {
+	if(a_version->count > 0) {
 		printf("%s %s\n", progname, version);
-		exitcode = 0;
+		rc = EXIT_SUCCESS;
 		goto exit;
 	}
-	
-
-	for (int i = 0; i < file->count; i++) {
-		printf("file = %s\n", file->filename[i]);
-		do_bsp(file->filename[i]);
-	}
-	for (int i = 0; i < output->count; i++) {
-		printf("out = %s\n", output->filename[i]);
-	}
-
-	//do_bsp(argv[1]);
-
-	//getchar();
+			
 	if (nerrors > 0) {
 		arg_print_errors(stdout, end, progname);
 		printf("Try '%s --help' for more information.\n", progname);
-		exitcode = 1;
+		rc = EXIT_FAILURE;
 		goto exit;
+	}
+
+	g_verbose = a_verbose->count > 0;
+
+	assert(a_file->count == 1);
+	assert(a_output->count == 1);
+	assert(a_gamedir->count <= 1);
+
+	const char* input = a_file->filename[0];
+	const char* output = a_output->filename[0];
+	const char* gamedir = NULL;
+
+	if (!is_valid_dir(output)) {
+		printf("Missing or invalid output directory location: %s\n", output);
+		rc = EXIT_FAILURE;
+		goto exit;
+	}
+
+	bool is_input_dir = false;
+
+	if (is_valid_dir(input)) {
+		is_input_dir = true;
+	} else {
+		if(strncmp(a_file->extension[0], ".bsp", 3) != 0) {
+			printf("Invalid file: %s\nOnly .bsp files supported for archival.", input);
+			rc = EXIT_FAILURE;
+			goto exit;
+		}
+		if (!is_valid_file(input)) {
+			printf("Invalid or missing file %s\n", input);
+			rc = EXIT_FAILURE;
+			goto exit;
+		}
+	}
+	
+	if (a_gamedir->count == 1) {
+		gamedir = a_gamedir->filename[0];
+		if (!is_valid_dir(gamedir)) {
+			printf("Game directory could not be found %s\n", gamedir);;
+			rc = EXIT_FAILURE;
+			goto exit;
+		}
+	}
+	else if(a_gamedir->count == 0) {
+		gamedir = find_gamedir(input, is_input_dir);
+		if(!gamedir) {
+			printf("Missing or invalid game directory, the game directory is the mod folder for your Half-Life game.\n");
+			rc = EXIT_FAILURE;
+			goto exit;
+		}
+	}
+	
+	if(!is_valid_gamedir(gamedir)) {
+		printf("Could not find valid game directory.");
+		rc = EXIT_FAILURE;
+		goto exit;
+	}
+
+	if(g_verbose) {
+		printf("Game directory: %s\n", gamedir);
+	}
+
+	if(is_input_dir) {
+		rc = archive_bsp_dir(input, output, gamedir);
+	}
+	else {
+		rc = archive_bsp(input, output, gamedir);
 	}
 
 exit:
 	arg_freetable(argtable, COUNT_OF(argtable));
 	getchar();
-	return exitcode;
+	return rc;
 }

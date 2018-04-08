@@ -1,4 +1,5 @@
 #pragma once
+#include <stdint.h>
 
 typedef struct bsplump {
 	int32_t offset;
