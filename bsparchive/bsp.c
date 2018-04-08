@@ -7,25 +7,40 @@
 #include "common.h"
 #include "token.h"
 
-bspheader* bsp_open(const char* path) {
+char* bsp_open_entities(const char* path) {
 	assert(path != NULL);
+	char* entities = NULL;
 
 	FILE* fp = fopen(path, "rb");
 	if (fp == NULL) {
 		perror("Error opening bsp");
-		exit(1);
+		goto exit;
 	}
 
-	fseek(fp, 0, SEEK_END);
-	size_t file_size = ftell(fp);
-	rewind(fp);
+	bspheader header;
+	if(fread(&header, sizeof(bspheader), 1, fp) != 1) {
+		perror("Error reading bsp header");
+		goto exit;
+	};
+	// only gold source supported
+	assert(header.version == 30);
 
-	char* buf = xmalloc(file_size * sizeof(char));
-	size_t size_read = fread(buf, sizeof(char), file_size, fp);
-	assert(size_read == file_size);
+	bsplump entities_lump = header.lump[LUMP_ENTITIES];
+	assert(entities_lump.offset > 0);
+	assert(entities_lump.length > 0);
 
-	fclose(fp);
-	return (bspheader*)buf;
+	entities = (char*)xmalloc(entities_lump.length);
+
+	fseek(fp, entities_lump.offset, SEEK_SET);
+	if (fread(entities, sizeof(char), entities_lump.length, fp) != entities_lump.length) {
+		perror("Error reading bsp file");
+		free(entities);
+		entities = NULL;	
+	}
+	
+exit:
+	if(fp) fclose(fp);
+	return entities;
 }
 
 static void bsp_read_ent_values(const bsp_entity_reader reader, char* key, char* value) {

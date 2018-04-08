@@ -17,5 +17,5 @@ typedef struct bspheader {
 
 typedef void(*bsp_entity_reader)(char*, char*);
 
-bspheader* bsp_open(const char* path);
+char* bsp_open_entities(const char* path);
 void bsp_read_entities(bsp_entity_reader reader);

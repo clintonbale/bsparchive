@@ -130,13 +130,17 @@ void add_dependency(char* value) {
 	}
 }
 
-void do_bsp(char* bsp_path) {
-	bspheader* bsp = bsp_open(bsp_path);
-	assert(bsp->version == 30);
-
-	stream = (char*)((char*)bsp + bsp->lump[LUMP_ENTITIES].offset);
+bool do_bsp(char* bsp_path) {
+	char* ents = bsp_open_entities(bsp_path);
+	if(!ents) {
+		goto exit;
+	}
+	stream = ents;	
 	bsp_read_entities(parse_bsp_ent_value);
-	
+	stream = NULL;
+
+	free(ents);
+
 	size_t len = buf_len(deps);
 	for (int i = 0; i < len; ++i) {
 		char* dependency = deps[i];
@@ -144,8 +148,8 @@ void do_bsp(char* bsp_path) {
 		free(dependency);
 	}
 
-	buf_clear(deps);
-	free(bsp);
+exit:
+	if(deps) buf_clear(deps);
 }
 
 int archive_bsp_dir(const char* input, const char* output, const char* gamedir) {	
