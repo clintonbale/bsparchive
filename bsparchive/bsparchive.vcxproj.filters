@@ -5,15 +5,15 @@
     <ClCompile Include="common.c" />
     <ClCompile Include="token.c" />
     <ClCompile Include="bsp.c" />
-    <ClCompile Include="argtable3.c" />
     <ClCompile Include="archive.c" />
+    <ClCompile Include="lib\argtable3.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="token.h" />
     <ClInclude Include="common.h" />
     <ClInclude Include="bsp.h" />
-    <ClInclude Include="tinydir.h" />
-    <ClInclude Include="argtable3.h" />
     <ClInclude Include="archive.h" />
+    <ClInclude Include="lib\argtable3.h" />
+    <ClInclude Include="lib\tinydir.h" />
   </ItemGroup>
 </Project>

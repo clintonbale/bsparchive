@@ -136,7 +136,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="archive.c" />
-    <ClCompile Include="argtable3.c" />
+    <ClCompile Include="lib\argtable3.c" />
     <ClCompile Include="bsp.c" />
     <ClCompile Include="common.c" />
     <ClCompile Include="main.c" />
@@ -144,10 +144,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="archive.h" />
-    <ClInclude Include="argtable3.h" />
+    <ClInclude Include="lib\argtable3.h" />
     <ClInclude Include="bsp.h" />
     <ClInclude Include="common.h" />
-    <ClInclude Include="tinydir.h" />
+    <ClInclude Include="lib\tinydir.h" />
     <ClInclude Include="token.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

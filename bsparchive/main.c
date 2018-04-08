@@ -7,8 +7,8 @@
 #include <stdbool.h>
 
 #include "archive.h"
-#include "argtable3.h"
-#include "tinydir.h"
+#include "lib/argtable3.h"
+#include "lib/tinydir.h"
 #include "common.h"
 
 bool g_verbose;

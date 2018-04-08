@@ -6,7 +6,7 @@
 #include "common.h"
 #include "bsp.h"
 #include "token.h"
-#include "tinydir.h"
+#include "lib/tinydir.h"
 #include "archive.h"
 
 
