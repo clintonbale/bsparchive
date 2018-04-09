@@ -6,9 +6,14 @@
 #include "common.h"
 #include "bsp.h"
 #include "token.h"
-#include "lib/tinydir.h"
 #include "archive.h"
+
+#pragma warning(push, 0)  
+#include "lib/tinydir.h"
 #include "lib/miniz.h"
+#pragma warning(pop)
+
+static char** dependency_list = NULL;
 
 const char* const formats[] = {
 	".mdl",
@@ -40,6 +45,7 @@ bool valid_resource_format(const char* fmt) {
 	}
 	return false;
 }
+
 bool is_speak_key(const char* key) {
 	for (int i = 0; i < COUNT_OF(speak_keys); i++) {
 		if (strcmp(key, speak_keys[i]) == 0) {
@@ -49,40 +55,50 @@ bool is_speak_key(const char* key) {
 	return false;
 }
 
-void add_dependency(char* value);
-
-
 void normalize_value(char* value) {
 	assert(value != NULL);
 
 	while (*value) {
 		if (isalpha(*value))
-			*value = tolower(*value);
+			*value = (char)tolower(*value);
 		else if (*value == '\\')
 			*value = '/';
 		value++;
 	}
 }
 
+void add_dependency(char* value) {
+	for (size_t i = 0; i < buf_len(dependency_list); ++i) {
+		if (strcmp(dependency_list[i], value) == 0)
+			return;
+	}
+	buf_push(dependency_list, _strdup(value));
+	if (g_verbose) {
+		//TODO: log where the dependency is from (the bsp)
+		printf("Found dependency: %s\n", value);
+	}
+}
+
 void parse_bsp_ent_value(char* key, char* value) {
+	static char temp[1024];
+	temp[0] = 0;
+
 	assert(key != NULL);
 	assert(value != NULL);
 	if (!value[0]) return;
 
 	normalize_value(value);
 
-	char buf[1024] = "";
-
 	char* extension = strrchr(value, '.');
 	if (strcmp(key, "skyname") == 0) {
-		strcat(buf, "gfx/env/");
-		strcat(buf, value);
+		strcat(temp, "gfx/env/");
+		strcat(temp, value);
 
-		size_t len = strlen(buf), side_len = COUNT_OF(gfx_sides);
+		size_t len = strlen(temp), side_len = COUNT_OF(gfx_sides);
 		while (side_len--) {
-			buf[len] = 0;
-			strcat(buf, gfx_sides[side_len]);
-			add_dependency(buf);
+			temp[len] = 0;
+			strcat(temp, gfx_sides[side_len]);
+			add_dependency(temp);
 		}
 	}
 	else if (strcmp(key, "wad") == 0) {
@@ -100,9 +116,9 @@ void parse_bsp_ent_value(char* key, char* value) {
 	else if (extension) {
 		if (valid_resource_format(extension)) {
 			if (strcmp(extension, ".wav") == 0) {
-				strcat(buf, "sound/");
-				strcat(buf, value);
-				add_dependency(buf);
+				strcat(temp, "sound/");
+				strcat(temp, value);
+				add_dependency(temp);
 			}
 			else {
 				add_dependency(value);
@@ -114,19 +130,6 @@ void parse_bsp_ent_value(char* key, char* value) {
 				printf("Unknown file format '%s' - ignoring '%s'\n", extension, value);
 			}
 		}
-	}
-}
-
-char** deps = NULL;
-
-void add_dependency(char* value) {
-	for (int i = 0; i < buf_len(deps); ++i) {
-		if (strcmp(deps[i], value) == 0)
-			return;
-	}
-	buf_push(deps, strdup(value));
-	if (g_verbose) {
-		//printf("Found dependency: %s\n", value);
 	}
 }
 
@@ -214,28 +217,28 @@ int archive_bsp(const char* bsp_path, const char* output_path, const char* gamed
 	stream = ents;
 	bsp_read_entities(parse_bsp_ent_value);
 	
-	size_t len = buf_len(deps);
-	for (int i = 0; i < len; ++i) {
-		char* dependency = deps[i];
-		char* fullpath = get_full_path(dependency, gamedir);
+	size_t len = buf_len(dependency_list);
+	for (size_t i = 0; i < len; ++i) {
+		char* dep_name = dependency_list[i];
+		char* fullpath = get_full_path(dep_name, gamedir);
 
 		void* data = NULL;
 		size_t data_len = 0;
 
 		if (read_dependency(fullpath, &data, &data_len)) {
-			printf("read the file! %s - %d\n", fullpath, data_len);
+			printf("read the file! %s - %u\n", fullpath, data_len);
 			//TODO: zip it n ship it.
 		}
 	next:
 		if (data) free(data);
-		if (deps[i]) {
-			free(deps[i]);
-			deps[i] = NULL;
+		if (dependency_list[i]) {
+			free(dependency_list[i]);
+			dependency_list[i] = NULL;
 		}
 	}
 exit:
 	stream = NULL;
 	if (ents) free(ents);
-	if (deps) buf_clear(deps);
+	if (dependency_list) buf_clear(dependency_list);
 	return rc;
 }

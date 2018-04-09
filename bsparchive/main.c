@@ -1,5 +1,3 @@
-#define _CRT_SECURE_NO_DEPRECATE
-
 #include <stdint.h>
 #include <assert.h>
 #include <stdio.h>
@@ -7,9 +5,12 @@
 #include <stdbool.h>
 
 #include "archive.h"
+#include "common.h"
+
+#pragma warning(push, 0)  
 #include "lib/argtable3.h"
 #include "lib/tinydir.h"
-#include "common.h"
+#pragma warning(pop)
 
 bool g_verbose;
 

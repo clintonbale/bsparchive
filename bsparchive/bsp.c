@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include "bsp.h"
 #include "common.h"
 #include "token.h"
@@ -32,7 +33,7 @@ char* bsp_open_entities(const char* path) {
 	entities = (char*)xmalloc(entities_lump.length);
 
 	fseek(fp, entities_lump.offset, SEEK_SET);
-	if (fread(entities, sizeof(char), entities_lump.length, fp) != entities_lump.length) {
+	if (fread(entities, sizeof(char), entities_lump.length, fp) != (size_t)entities_lump.length) {
 		perror("Error reading bsp file");
 		free(entities);
 		entities = NULL;	

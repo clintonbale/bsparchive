@@ -18,7 +18,7 @@ typedef struct Token {
 const char* stream;
 EntityToken token;
 
-void next_token();
+void next_token(void);
 
 inline bool is_token(EntityTokenType type) {
 	return token.type == type;
@@ -43,4 +43,4 @@ inline bool expect_token(EntityTokenType type) {
 	}
 }
 
-void token_test();
+void token_test(void);

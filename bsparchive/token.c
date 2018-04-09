@@ -1,6 +1,3 @@
-#pragma once
-#define _CRT_SECURE_NO_DEPRECATE
-
 #include <stdio.h>
 #include <ctype.h>
 #include <assert.h>
@@ -12,7 +9,7 @@
 const char* stream;
 EntityToken token;
 
-void next_token() {
+void next_token(void) {
 repeat:
 	switch (*stream) {
 	case ' ': case '\n': case '\r': case '\t': case '\v':
@@ -50,7 +47,7 @@ repeat:
 	}
 }
 
-void token_test() {
+void token_test(void) {
 	char* s = "{\n\"origin\" \"490 562 -44\"\n}";
 	stream = s;
 
