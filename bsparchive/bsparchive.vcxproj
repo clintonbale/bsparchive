@@ -158,7 +158,7 @@
     <ClInclude Include="src\token.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="data\goldsrc-manifest.lst" />
+    <None Include="res\goldsrc-manifest.lst" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

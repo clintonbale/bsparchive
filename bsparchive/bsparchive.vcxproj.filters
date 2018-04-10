@@ -19,6 +19,6 @@
     <ClInclude Include="ext\tinydir.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="data\goldsrc-manifest.lst" />
+    <None Include="res\goldsrc-manifest.lst" />
   </ItemGroup>
 </Project>

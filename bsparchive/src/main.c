@@ -14,12 +14,12 @@
 
 bool g_verbose;
 
-struct arg_lit *a_verbose, *a_help, *a_version;
-struct arg_file *a_gamedir, *a_file, *a_output;
-struct arg_end *end;
+static struct arg_lit *a_verbose, *a_help, *a_version;
+static struct arg_file *a_gamedir, *a_file, *a_output;
+static struct arg_end *end;
 
 static const char* const exclude_list[] = {	
-	#include "../data/goldsrc-manifest.lst"
+	#include "../res/goldsrc-manifest.lst"
 };
 
 static bool is_valid_dir(const char* path) {
