@@ -8,8 +8,8 @@
 #include "common.h"
 
 #pragma warning(push, 0)  
-#include "lib/argtable3.h"
-#include "lib/tinydir.h"
+#include "../ext/argtable3.h"
+#include "../ext/tinydir.h"
 #pragma warning(pop)
 
 bool g_verbose;
@@ -17,6 +17,10 @@ bool g_verbose;
 struct arg_lit *a_verbose, *a_help, *a_version;
 struct arg_file *a_gamedir, *a_file, *a_output;
 struct arg_end *end;
+
+static const char* const exclude_list[] = {	
+	#include "../data/goldsrc-manifest.lst"
+};
 
 static bool is_valid_dir(const char* path) {
 	assert(path != NULL);
@@ -98,6 +102,10 @@ static const char* find_gamedir(const char* input, bool is_input_dir) {
 	}
 
 	return gamedir;
+}
+
+void load_exclude_manifest() {
+	//TODO: create hashset of exclude manifest
 }
 
 int main(int argc, char* argv[]) {
@@ -202,6 +210,8 @@ int main(int argc, char* argv[]) {
 	if(g_verbose) {
 		printf("Game directory: %s\n", gamedir);
 	}
+
+	load_exclude_manifest();
 
 	if(is_input_dir) {
 		rc = archive_bsp_dir(input, output, gamedir);

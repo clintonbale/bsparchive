@@ -9,8 +9,8 @@
 #include "archive.h"
 
 #pragma warning(push, 0)  
-#include "lib/tinydir.h"
-#include "lib/miniz.h"
+#include "../ext/tinydir.h"
+#include "../ext/miniz.h"
 #pragma warning(pop)
 
 static char** dependency_list = NULL;
@@ -204,6 +204,17 @@ int archive_bsp_dir(const char* input, const char* output, const char* gamedir) 
 	return EXIT_SUCCESS;
 }
 
+void add_extra_dependencies(const char* bsp_path) {	
+	//TODO: add .bsp, .txt and .res files
+	// maps/mapname.bsp
+	// maps/mapname.txt
+	// maps/mapname.res
+	//TODO: add overviews:
+	// overviews/mapname.bmp
+	// overviews/mapname.tga
+	// overviews/mapname.txt
+}
+
 int archive_bsp(const char* bsp_path, const char* output_path, const char* gamedir) {
 	//TODO: enum on exit statuses
 	int rc = EXIT_SUCCESS;
@@ -216,6 +227,8 @@ int archive_bsp(const char* bsp_path, const char* output_path, const char* gamed
 	}
 	stream = ents;
 	bsp_read_entities(parse_bsp_ent_value);
+
+	add_extra_dependencies(bsp_path);
 	
 	size_t len = buf_len(dependency_list);
 	for (size_t i = 0; i < len; ++i) {
