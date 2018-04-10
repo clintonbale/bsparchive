@@ -3,6 +3,10 @@
 
 #define COUNT_OF(x) ((sizeof(x)/sizeof(0[x])) / ((size_t)(!(sizeof(x) % sizeof(0[x])))))
 
+#ifdef _WIN32
+#define strcasecmp _stricmp
+#endif
+
 void fatal(char* fmt, ...);
 void* xmalloc(size_t size);
 void* xrealloc(void *ptr, size_t num_bytes);

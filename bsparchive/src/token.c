@@ -4,7 +4,6 @@
 #include <string.h>
 
 #include "token.h"
-#include "common.h"
 
 const char* stream;
 EntityToken token;

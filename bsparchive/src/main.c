@@ -71,7 +71,7 @@ static bool is_valid_gamedir(const char* gamedir) {
 
 		if (file.is_dir) {
 			for (int i = 0; i < COUNT_OF(gamedir_folders); i++) {
-				if (strcmp(file.name, gamedir_folders[i]) == 0) {
+				if (strcasecmp(file.name, gamedir_folders[i]) == 0) {
 					matches++;
 				}
 			}
