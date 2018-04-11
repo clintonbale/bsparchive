@@ -150,7 +150,9 @@ bool read_dependency(const char* path, void** data, size_t* data_len) {
 	bool success = true;
 	FILE* fp = fopen(path, "rb");
 	if (fp == NULL) {
-		printf("Dependency missing: %s\n", path);
+		if (g_verbose) {
+			printf("Dependency missing: %s\n", path);
+		}
 		//*data = NULL;
 		//*data_len = 0;
 		success = false;
@@ -204,7 +206,7 @@ int archive_bsp_dir(const char* input, const char* output, const char* gamedir) 
 	assert(dir.has_next > 0);
 
 	printf("Archiving map directory %s\n", input);
-
+	
 	while (dir.has_next) {
 		tinydir_readfile(&dir, &file);
 		if (strncmp(file.extension, "bsp", 3) == 0) {
@@ -218,14 +220,38 @@ int archive_bsp_dir(const char* input, const char* output, const char* gamedir) 
 }
 
 void add_extra_dependencies(const char* bsp_path) {	
-	//TODO: add .bsp, .txt and .res files
-	// maps/mapname.bsp
-	// maps/mapname.txt
-	// maps/mapname.res
-	//TODO: add overviews:
-	// overviews/mapname.bmp
-	// overviews/mapname.tga
-	// overviews/mapname.txt
+	size_t path_len = strlen(bsp_path);
+	const char* last = &bsp_path[path_len];
+
+	char bspname[MAX_PATH], temp[MAX_PATH];
+
+	while(*--last && last != bsp_path) {
+		if(*last == '\\' || *last == '/') {
+			last++;
+			break;
+		}
+	}
+	if (last == bsp_path)
+		return;
+	
+	// we only want the bsp name so get rid of the extension
+	size_t file_len = path_len - (last - bsp_path) - 4;
+	strncpy(bspname, last, file_len);
+	bspname[file_len] = 0;
+
+	sprintf(temp, "maps/%s.bsp", bspname);
+	add_dependency(temp);
+	sprintf(temp, "maps/%s.txt", bspname);
+	add_dependency(temp);
+	sprintf(temp, "maps/%s.res", bspname);
+	add_dependency(temp);
+
+	sprintf(temp, "overviews/%s.bmp", bspname);
+	add_dependency(temp);
+	sprintf(temp, "overviews/%s.tga", bspname);
+	add_dependency(temp);
+	sprintf(temp, "overviews/%s.txt", bspname);
+	add_dependency(temp);
 }
 
 int archive_bsp(const char* bsp_path, const char* output_path, const char* gamedir) {
