@@ -57,26 +57,22 @@ bool is_speak_key(const char* key) {
 	return false;
 }
 
-char* normalize_value(char* value) {
+void normalize_value(char* value) {
 	assert(value != NULL);
-	
-	char* temp = value;
-	do {
-		if(*temp && *temp & 0x80) {
-			printf("Unsupported character found in entity %c - skipping dependency check\n", *temp);			
-			return NULL;
-		}
-	} while (*++temp);
+	char* v = value;
 
-	char* ret = value;
 	while (*value) {
-		if (isalpha(*value))
+		if(*value & 0x80) {
+			printf("Unsupported character found in entity %c - skipping dependency check\n", *value);
+			v[0] = 0;
+			return;
+		}
+		else if (isalpha(*value))
 			*value = (char)tolower(*value);
 		else if (*value == '\\')
 			*value = '/';
 		value++;
 	}
-	return ret;
 }
 
 void add_dependency(char* value) {
@@ -97,15 +93,9 @@ void parse_bsp_ent_value(char* key, char* value) {
 
 	assert(key != NULL);
 	assert(value != NULL);
-	if (!value[0]) return;
 
-	value = normalize_value(value);
-	if(value == NULL) {
-		if(g_verbose) {
-			printf("Invalid value for entity with property key: '%s'\n", key);
-		}
-		return;
-	}
+	normalize_value(value);
+	if (!value[0]) return;
 
 	char* extension = strrchr(value, '.');
 	if (strcmp(key, "skyname") == 0) {
