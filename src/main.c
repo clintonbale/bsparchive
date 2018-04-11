@@ -8,8 +8,8 @@
 #include "common.h"
 
 #pragma warning(push, 0)  
-#include "../ext/argtable3.h"
-#include "../ext/tinydir.h"
+#include "argtable3.h"
+#include "tinydir.h"
 #pragma warning(pop)
 
 bool g_verbose;

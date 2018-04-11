@@ -9,8 +9,8 @@
 #include "archive.h"
 
 #pragma warning(push, 0)  
-#include "../ext/tinydir.h"
-#include "../ext/miniz.h"
+#include "tinydir.h"
+#include "miniz.h"
 #pragma warning(pop)
 
 static char** dependency_list = NULL;
@@ -38,9 +38,11 @@ const char* const speak_keys[] = {
 };
 
 bool valid_resource_format(const char* fmt) {
-	for (int i = 0; i < COUNT_OF(formats); i++) {
-		if (strcmp(fmt, formats[i]) == 0) {
-			return true;
+	if (fmt != NULL) {
+		for (int i = 0; i < COUNT_OF(formats); i++) {
+			if (strcmp(fmt, formats[i]) == 0) {
+				return true;
+			}
 		}
 	}
 	return false;
@@ -55,9 +57,18 @@ bool is_speak_key(const char* key) {
 	return false;
 }
 
-void normalize_value(char* value) {
+char* normalize_value(char* value) {
 	assert(value != NULL);
+	
+	char* temp = value;
+	do {
+		if(*temp && *temp & 0x80) {
+			printf("Unsupported character found in entity %c - skipping dependency check\n", *temp);			
+			return NULL;
+		}
+	} while (*++temp);
 
+	char* ret = value;
 	while (*value) {
 		if (isalpha(*value))
 			*value = (char)tolower(*value);
@@ -65,6 +76,7 @@ void normalize_value(char* value) {
 			*value = '/';
 		value++;
 	}
+	return ret;
 }
 
 void add_dependency(char* value) {
@@ -80,14 +92,20 @@ void add_dependency(char* value) {
 }
 
 void parse_bsp_ent_value(char* key, char* value) {
-	static char temp[1024];
+	static char temp[ENT_MAX_VALUE];
 	temp[0] = 0;
 
 	assert(key != NULL);
 	assert(value != NULL);
 	if (!value[0]) return;
 
-	normalize_value(value);
+	value = normalize_value(value);
+	if(value == NULL) {
+		if(g_verbose) {
+			printf("Invalid value for entity with property key: '%s'\n", key);
+		}
+		return;
+	}
 
 	char* extension = strrchr(value, '.');
 	if (strcmp(key, "skyname") == 0) {
@@ -102,11 +120,17 @@ void parse_bsp_ent_value(char* key, char* value) {
 		}
 	}
 	else if (strcmp(key, "wad") == 0) {
-		add_dependency(value);
+		if (valid_resource_format(extension)) {
+			//TODO: option: add fullpath wad dependencies
+			//add_dependency(value);
+		}
 		char* last_path = strrchr(value, '/');
 		if(last_path != NULL) {
 			last_path++;
-			add_dependency(last_path);
+			extension = strrchr(last_path, '.');
+			if (valid_resource_format(extension)) {
+				add_dependency(last_path);
+			}
 		}
 	}
 	else if (is_speak_key(key)) {
@@ -125,9 +149,8 @@ void parse_bsp_ent_value(char* key, char* value) {
 			}
 		}
 		else if (strlen(extension) >= 4) {
-			// if verbose
 			if (g_verbose) {
-				printf("Unknown file format '%s' - ignoring '%s'\n", extension, value);
+				//printf("Unknown file format '%s' - ignoring '%s'\n", extension, value);
 			}
 		}
 	}

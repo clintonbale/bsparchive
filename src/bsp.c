@@ -69,21 +69,25 @@ static void bsp_read_ent_values(const bsp_entity_reader reader, char* key, char*
 void bsp_read_entities(bsp_entity_reader reader) {
 	assert(reader != NULL);
 
-	char key[ENT_MAX_KEY];
-	char value[ENT_MAX_VALUE];
+	char key[ENT_MAX_KEY + 1];
+	char value[ENT_MAX_VALUE + 1];
 
 	next_token();
 	while (match_token(TOKEN_BEGIN_ENT)) {
 		while (is_token(TOKEN_STR)) {
-			strncpy(key, token.start, token.end - token.start);
-			key[token.end - token.start] = 0;
-			assert(token.end - token.start < ENT_MAX_KEY);
+			size_t key_len = min(token.end - token.start, ENT_MAX_KEY);
+			assert(key_len >= 0);
+
+			strncpy(key, token.start, key_len);
+			key[key_len] = 0;
 			
 			expect_token(TOKEN_STR);
+			
+			size_t value_len = min(token.end - token.start, ENT_MAX_VALUE);
+			assert(value_len >= 0);
 
-			strncpy(value, token.start, token.end - token.start);
-			value[token.end - token.start] = 0;
-			assert(token.end - token.start < ENT_MAX_VALUE);
+			strncpy(value, token.start, value_len);
+			value[value_len] = 0;
 
 			bsp_read_ent_values(reader, key, value);
 			next_token();

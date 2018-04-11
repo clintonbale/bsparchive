@@ -14,6 +14,7 @@ repeat:
 	case ' ': case '\n': case '\r': case '\t': case '\v':
 		while (isspace(*stream)) {
 			stream++;
+			if (*stream & 0x80) break;
 		}
 		goto repeat;
 		break;

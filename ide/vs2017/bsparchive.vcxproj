@@ -71,13 +71,21 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IntDir>build\$(Configuration)\</IntDir>
-    <OutDir>bin\$(Configuration)\</OutDir>
+    <IntDir>..\..\build\$(Configuration)\</IntDir>
+    <OutDir>..\..\bin\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IntDir>build\$(Configuration)\</IntDir>
-    <OutDir>bin\$(Configuration)\</OutDir>
+    <IntDir>..\..\build\$(Configuration)\</IntDir>
+    <OutDir>..\..\bin\$(Configuration)\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>..\..\bin</OutDir>
+    <IntDir>..\..\build\$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>..\..\bin</OutDir>
+    <IntDir>..\..\build\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -101,6 +109,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
+      <PreprocessorDefinitions>_MBCS;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <Profile>true</Profile>
@@ -133,6 +142,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
+      <PreprocessorDefinitions>_MBCS;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -140,25 +150,25 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\archive.c" />
-    <ClCompile Include="ext\argtable3.c" />
-    <ClCompile Include="src\bsp.c" />
-    <ClCompile Include="src\common.c" />
-    <ClCompile Include="ext\miniz.c" />
-    <ClCompile Include="src\main.c" />
-    <ClCompile Include="src\token.c" />
+    <ClCompile Include="..\..\src\archive.c" />
+    <ClCompile Include="..\..\src\argtable3.c" />
+    <ClCompile Include="..\..\src\bsp.c" />
+    <ClCompile Include="..\..\src\common.c" />
+    <ClCompile Include="..\..\src\miniz.c" />
+    <ClCompile Include="..\..\src\main.c" />
+    <ClCompile Include="..\..\src\token.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\archive.h" />
-    <ClInclude Include="ext\argtable3.h" />
-    <ClInclude Include="src\bsp.h" />
-    <ClInclude Include="src\common.h" />
-    <ClInclude Include="ext\miniz.h" />
-    <ClInclude Include="ext\tinydir.h" />
-    <ClInclude Include="src\token.h" />
+    <ClInclude Include="..\..\src\archive.h" />
+    <ClInclude Include="..\..\src\argtable3.h" />
+    <ClInclude Include="..\..\src\bsp.h" />
+    <ClInclude Include="..\..\src\common.h" />
+    <ClInclude Include="..\..\src\miniz.h" />
+    <ClInclude Include="..\..\src\tinydir.h" />
+    <ClInclude Include="..\..\src\token.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="res\goldsrc-manifest.lst" />
+    <None Include="..\..\res\goldsrc-manifest.lst" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
