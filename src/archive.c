@@ -306,7 +306,7 @@ int archive_bsp(const char* bsp_path, const char* output_path, const char* gamed
 		void* data = NULL;
 		size_t data_len = 0;
 		
-		if(hash_exists(exclude_table, dep_name)) {
+		if(hashtable_contains(exclude_table, dep_name)) {
 			if(g_verbose) printf("Skipping: %s\n", dep_name);
 			dep_skipped++;
 		}

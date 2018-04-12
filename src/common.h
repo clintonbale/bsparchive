@@ -11,7 +11,7 @@
 
 void fatal(char* fmt, ...);
 void* xmalloc(size_t size);
-void* xcalloc(size_t size);
+void* xcalloc(size_t count, size_t size);
 void* xrealloc(void *ptr, size_t num_bytes);
 
 typedef struct BufHdr {
@@ -40,6 +40,6 @@ typedef struct map {
 	size_t cap;
 } hash_table;
 
-hash_table* hash_create(size_t initial_size);
-void hash_add(hash_table* ht, const char* data);
-bool hash_exists(hash_table* ht, const char* data);
+hash_table* hashtable_create(size_t initial_size);
+void hashtable_add(hash_table* ht, const char* data);
+bool hashtable_contains(hash_table* ht, const char* data);

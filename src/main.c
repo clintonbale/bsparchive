@@ -108,16 +108,16 @@ static const char* find_gamedir(const char* input, bool is_input_dir) {
 void load_exclude_manifest() {
 	size_t items = COUNT_OF(exclude_list);
 
-	exclude_table = hash_create(items);
+	exclude_table = hashtable_create(items);
 	assert(exclude_table != NULL);
 	
 	for(size_t i = 0; i < items; ++i) {
-		hash_add(exclude_table, exclude_list[i]);
+		hashtable_add(exclude_table, exclude_list[i]);
 	}
 
-	assert(hash_exists(exclude_table, "sound/hgrunt/fire!.wav"));
-	assert(hash_exists(exclude_table, "sprites/fog5.spr"));
-	assert(hash_exists(exclude_table, "gfx/vgui/fonts/800_title font.tga"));
+	assert(hashtable_contains(exclude_table, "sound/hgrunt/fire!.wav"));
+	assert(hashtable_contains(exclude_table, "sprites/fog5.spr"));
+	assert(hashtable_contains(exclude_table, "gfx/vgui/fonts/800_title font.tga"));
 }
 
 int main(int argc, char* argv[]) {
@@ -238,6 +238,5 @@ int main(int argc, char* argv[]) {
 
 exit:
 	arg_freetable(argtable, COUNT_OF(argtable));
-	getchar();
 	return rc;
 }

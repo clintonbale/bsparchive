@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <stdint.h>
 
 void fatal(char* fmt, ...) {
 	va_list args;
@@ -60,21 +61,20 @@ void *buf__grow(const void *buf, size_t new_len, size_t elem_size) {
 	return new_hdr->buf;
 }
 
-size_t hash(const char* data) {
-	char* b = data;
-	size_t x = 0xcbf29ce484222325;
-	while(*b) {
-		x ^= *b++;
-		x *= 0x100000001b3;
-		x ^= x >> 32;
+//FNV-1
+uint64_t hash(const char* data) {
+	uint64_t hash = 0xCBF29CE484222325;
+	for(size_t i = 0; data[i]; ++i) {
+		hash = hash * 0x100000001B3;
+		hash = hash ^ data[i];
 	}
-	return x;
+	return hash;
 }
 
-hash_table* hash_create(size_t items) {
+hash_table* hashtable_create(size_t items) {
 	hash_table* map = xcalloc(1, sizeof(hash_table));
 
-	items = max(items*2, 16);
+	items = (max(items*2, 16) + 0x1F) & ~0x1F;
 
 	map->vals = xcalloc(items, sizeof(const char*));
 	map->cap = items;
@@ -82,12 +82,12 @@ hash_table* hash_create(size_t items) {
 	return map;
 }
 
-void hash_add(hash_table* ht, const char* data) {
+void hashtable_add(hash_table* ht, const char* data) {
 	assert(ht != NULL);
 	assert(data);
 	assert(ht->len < ht->cap);
 
-	size_t index = hash(data) % ht->cap;
+	uint64_t index = hash(data) % ht->cap;
 	
 	while (ht->vals[index] != NULL) {
 		++index;
@@ -99,11 +99,11 @@ void hash_add(hash_table* ht, const char* data) {
 	ht->len++;
 }
 
-bool hash_exists(hash_table* ht, const char* data) {
+bool hashtable_contains(hash_table* ht, const char* data) {
 	assert(ht != NULL);
 	assert(data);
 
-	size_t index = hash(data) % ht->cap;
+	uint64_t index = hash(data) % ht->cap;
 	
 	while (ht->vals[index] != NULL) {
 		if (strcmp(ht->vals[index], data) == 0)
