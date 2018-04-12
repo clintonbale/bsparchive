@@ -117,7 +117,7 @@ void load_exclude_manifest() {
 
 	assert(hash_exists(exclude_table, "sound/hgrunt/fire!.wav"));
 	assert(hash_exists(exclude_table, "sprites/fog5.spr"));
-	assert(hash_exists(exclude_table, "gfx/vgui/fonts/800_Title Font.tga"));
+	assert(hash_exists(exclude_table, "gfx/vgui/fonts/800_title font.tga"));
 }
 
 int main(int argc, char* argv[]) {
