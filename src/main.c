@@ -124,6 +124,10 @@ int main(int argc, char* argv[]) {
 	const char* progname = "bsparchive";
 	const char* version = "0.1";
 	
+	//TODO: option to output list of missing dependencies only
+	//TODO: option to skip checking exclusion list and include everything
+	//TODO:		exclusion list per game mod type.
+
 	void *argtable[] = {
 		a_help = arg_litn("h", "help", 0, 1, "print this help and exit"),
 		a_verbose = arg_litn("v", "verbose", 0, 1, "verbose output"),
