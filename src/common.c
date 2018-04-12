@@ -24,6 +24,15 @@ void* xmalloc(size_t size) {
 	return ptr;
 }
 
+void* xcalloc(size_t count, size_t size) {
+	void* ptr = calloc(count, size);
+	if (!ptr) {
+		perror("xcalloc failed");
+		exit(1);
+	}
+	return ptr;
+}
+
 void *xrealloc(void *ptr, size_t num_bytes) {
 	ptr = realloc(ptr, num_bytes);
 	if (!ptr) {
@@ -49,4 +58,60 @@ void *buf__grow(const void *buf, size_t new_len, size_t elem_size) {
 	}
 	new_hdr->cap = new_cap;
 	return new_hdr->buf;
+}
+
+size_t hash(const char* data) {
+	char* b = data;
+	size_t x = 0xcbf29ce484222325;
+	while(*b) {
+		x ^= *b++;
+		x *= 0x100000001b3;
+		x ^= x >> 32;
+	}
+	return x;
+}
+
+hash_table* hash_create(size_t items) {
+	hash_table* map = xcalloc(1, sizeof(hash_table));
+
+	items = max(items*2, 16);
+
+	map->vals = xcalloc(items, sizeof(const char*));
+	map->cap = items;
+
+	return map;
+}
+
+void hash_add(hash_table* ht, const char* data) {
+	assert(ht != NULL);
+	assert(data);
+	assert(ht->len < ht->cap);
+
+	size_t index = hash(data) % ht->cap;
+	
+	while (ht->vals[index] != NULL) {
+		++index;
+
+		index %= ht->cap;
+	}
+
+	ht->vals[index] = data;
+	ht->len++;
+}
+
+bool hash_exists(hash_table* ht, const char* data) {
+	assert(ht != NULL);
+	assert(data);
+
+	size_t index = hash(data) % ht->cap;
+	
+	while (ht->vals[index] != NULL) {
+		if (strcmp(ht->vals[index], data) == 0)
+			return true;
+
+		++index;
+		index %= ht->cap;
+	}
+
+	return false;
 }

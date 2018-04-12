@@ -13,6 +13,7 @@
 #include "miniz.h"
 #pragma warning(pop)
 
+extern hash_table* exclude_table;
 static char** dependency_list = NULL;
 
 const char* const formats[] = {
@@ -296,7 +297,7 @@ int archive_bsp(const char* bsp_path, const char* output_path, const char* gamed
 	}	
 
 	size_t ndeps = buf_len(dependency_list);
-	size_t dep_success = 0, dep_missing = 0;
+	size_t dep_success = 0, dep_missing = 0, dep_skipped = 0;
 
 	for (size_t i = 0; i < ndeps; ++i) {
 		char* dep_name = dependency_list[i];
@@ -304,8 +305,12 @@ int archive_bsp(const char* bsp_path, const char* output_path, const char* gamed
 
 		void* data = NULL;
 		size_t data_len = 0;
-
-		if (read_dependency(fullpath, &data, &data_len)) {
+		
+		if(hash_exists(exclude_table, dep_name)) {
+			if(g_verbose) printf("Skipping: %s\n", dep_name);
+			dep_skipped++;
+		}
+		else if (read_dependency(fullpath, &data, &data_len)) {
 			if(!mz_zip_writer_add_mem_ex(&archive, dep_name, data, data_len, NULL, 0, MZ_BEST_COMPRESSION, 0, 0)) {
 				printf("Error adding file to archive: %s, %s\n", dep_name, mz_zip_get_error_string(archive.m_last_error));
 			}

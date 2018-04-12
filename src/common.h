@@ -1,5 +1,5 @@
 #pragma once
-#include <stddef.h>
+#include <stdbool.h>
 
 #define COUNT_OF(x) ((sizeof(x)/sizeof(0[x])) / ((size_t)(!(sizeof(x) % sizeof(0[x])))))
 
@@ -11,6 +11,7 @@
 
 void fatal(char* fmt, ...);
 void* xmalloc(size_t size);
+void* xcalloc(size_t size);
 void* xrealloc(void *ptr, size_t num_bytes);
 
 typedef struct BufHdr {
@@ -32,3 +33,13 @@ typedef struct BufHdr {
 #define buf_clear(b) ((b) ? buf__hdr(b)->len = 0 : 0)
 
 void *buf__grow(const void* buf, size_t new_len, size_t elem_size);
+
+typedef struct map {
+	const char** vals;
+	size_t len;
+	size_t cap;
+} hash_table;
+
+hash_table* hash_create(size_t initial_size);
+void hash_add(hash_table* ht, const char* data);
+bool hash_exists(hash_table* ht, const char* data);

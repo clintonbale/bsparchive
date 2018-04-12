@@ -13,6 +13,7 @@
 #pragma warning(pop)
 
 bool g_verbose;
+hash_table* exclude_table;
 
 static struct arg_lit *a_verbose, *a_help, *a_version;
 static struct arg_file *a_gamedir, *a_file, *a_output;
@@ -105,7 +106,18 @@ static const char* find_gamedir(const char* input, bool is_input_dir) {
 }
 
 void load_exclude_manifest() {
-	//TODO: create hashset of exclude manifest
+	size_t items = COUNT_OF(exclude_list);
+
+	exclude_table = hash_create(items);
+	assert(exclude_table != NULL);
+	
+	for(size_t i = 0; i < items; ++i) {
+		hash_add(exclude_table, exclude_list[i]);
+	}
+
+	assert(hash_exists(exclude_table, "sound/hgrunt/fire!.wav"));
+	assert(hash_exists(exclude_table, "sprites/fog5.spr"));
+	assert(hash_exists(exclude_table, "gfx/vgui/fonts/800_Title Font.tga"));
 }
 
 int main(int argc, char* argv[]) {
