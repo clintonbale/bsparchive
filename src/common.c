@@ -62,7 +62,7 @@ void *buf__grow(const void *buf, size_t new_len, size_t elem_size) {
 }
 
 //FNV-1
-uint64_t hash(const char* data) {
+static uint64_t hash(const char* data) {
 	uint64_t hash = 0xCBF29CE484222325;
 	for(size_t i = 0; data[i]; ++i) {
 		hash = hash * 0x100000001B3;
