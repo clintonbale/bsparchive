@@ -57,15 +57,13 @@ bool is_speak_key(const char* key) {
 	return false;
 }
 
-void normalize_value(char* value) {
+bool normalize_value(char* value) {
 	assert(value != NULL);
-	char* v = value;
 
 	while (*value) {
 		if(*value & 0x80) {
 			printf("Unsupported character found in entity %c - skipping dependency check\n", *value);
-			v[0] = 0;
-			return;
+			return false;
 		}
 		else if (isalpha(*value))
 			*value = (char)tolower(*value);
@@ -73,6 +71,7 @@ void normalize_value(char* value) {
 			*value = '/';
 		value++;
 	}
+	return true;
 }
 
 void add_dependency(char* value) {
@@ -93,9 +92,14 @@ void parse_bsp_ent_value(char* key, char* value) {
 
 	assert(key != NULL);
 	assert(value != NULL);
-
-	normalize_value(value);
 	if (!value[0]) return;
+
+	if (!normalize_value(value)) {
+		if(g_verbose) {
+			printf("Error normalizing value with key '%s'\n", key);
+		}
+		return;
+	}
 
 	char* extension = strrchr(value, '.');
 	if (strcmp(key, "skyname") == 0) {
@@ -153,8 +157,6 @@ bool read_dependency(const char* path, void** data, size_t* data_len) {
 		if (g_verbose) {
 			printf("Dependency missing: %s\n", path);
 		}
-		//*data = NULL;
-		//*data_len = 0;
 		success = false;
 		goto exit;
 	}
@@ -219,25 +221,8 @@ int archive_bsp_dir(const char* input, const char* output, const char* gamedir) 
 	return EXIT_SUCCESS;
 }
 
-void add_extra_dependencies(const char* bsp_path) {	
-	size_t path_len = strlen(bsp_path);
-	const char* last = &bsp_path[path_len];
-
-	char bspname[MAX_PATH], temp[MAX_PATH];
-
-	while(*--last && last != bsp_path) {
-		if(*last == '\\' || *last == '/') {
-			last++;
-			break;
-		}
-	}
-	if (last == bsp_path)
-		return;
-	
-	// we only want the bsp name so get rid of the extension
-	size_t file_len = path_len - (last - bsp_path) - 4;
-	strncpy(bspname, last, file_len);
-	bspname[file_len] = 0;
+void add_base_dependencies(const char* bspname) {
+	char temp[MAX_PATH];
 
 	sprintf(temp, "maps/%s.bsp", bspname);
 	add_dependency(temp);
@@ -254,10 +239,39 @@ void add_extra_dependencies(const char* bsp_path) {
 	add_dependency(temp);
 }
 
+void get_bsp_name(const char* bsp_path, char* bspname) {
+	size_t path_len = strlen(bsp_path);
+	const char* last = &bsp_path[path_len];
+	
+	while (*--last && last != bsp_path) {
+		if (*last == '\\' || *last == '/') {
+			last++;
+			break;
+		}
+	}
+	if (last == bsp_path)
+		return;
+
+	// we only want the bsp name so get rid of the extension
+	size_t file_len = path_len - (last - bsp_path) - 4;
+	strncpy(bspname, last, file_len);
+	bspname[file_len] = 0;
+}
+
 int archive_bsp(const char* bsp_path, const char* output_path, const char* gamedir) {
 	//TODO: enum on exit statuses
 	int rc = EXIT_SUCCESS;
-	printf("Processing: %s\n", bsp_path);;
+	char bspname[MAX_PATH], archivename[MAX_PATH];
+
+	get_bsp_name(bsp_path, bspname);
+	if(g_verbose) {
+		printf("Processing map: %s\n", bsp_path);
+	}
+	else {
+		printf("Processing map: %s.bsp\n", bspname);
+	}
+
+	add_base_dependencies(bspname);
 
 	char* ents = bsp_open_entities(bsp_path);
 	if (!ents) {
@@ -266,11 +280,25 @@ int archive_bsp(const char* bsp_path, const char* output_path, const char* gamed
 	}
 	stream = ents;
 	bsp_read_entities(parse_bsp_ent_value);
-
-	add_extra_dependencies(bsp_path);
 	
-	size_t len = buf_len(dependency_list);
-	for (size_t i = 0; i < len; ++i) {
+	strcpy(archivename, bspname);
+	strcat(archivename, ".zip");
+
+	chdir(output_path);
+	remove(archivename);
+
+	mz_zip_archive archive = { 0 };
+	// create the archive
+	if(!mz_zip_writer_init_file_v2(&archive, archivename, 0, MZ_BEST_COMPRESSION)) {
+		printf("Failed to create zip archive: %s, %s\n", archivename, mz_zip_get_error_string(archive.m_last_error));
+		rc = EXIT_FAILURE;
+		goto exit;
+	}	
+
+	size_t ndeps = buf_len(dependency_list);
+	size_t dep_success = 0, dep_missing = 0;
+
+	for (size_t i = 0; i < ndeps; ++i) {
 		char* dep_name = dependency_list[i];
 		char* fullpath = get_full_path(dep_name, gamedir);
 
@@ -278,19 +306,46 @@ int archive_bsp(const char* bsp_path, const char* output_path, const char* gamed
 		size_t data_len = 0;
 
 		if (read_dependency(fullpath, &data, &data_len)) {
-			printf("read the file! %s - %u\n", fullpath, data_len);
-			//TODO: zip it n ship it.
+			if(!mz_zip_writer_add_mem_ex(&archive, dep_name, data, data_len, NULL, 0, MZ_BEST_COMPRESSION, 0, 0)) {
+				printf("Error adding file to archive: %s, %s\n", dep_name, mz_zip_get_error_string(archive.m_last_error));
+			}
+			else {
+				dep_success++;
+			}
 		}
-	next:
+		else {
+			dep_missing++;
+		}
 		if (data) free(data);
-		if (dependency_list[i]) {
-			free(dependency_list[i]);
-			dependency_list[i] = NULL;
-		}
 	}
+	
+	mz_bool success;
+	if(!(success = mz_zip_writer_finalize_archive(&archive))) {
+		printf("Error finalizing archive: %s, %s\n", archivename, mz_zip_get_error_string(archive.m_last_error));
+	}
+	if(!(success = mz_zip_writer_end(&archive))) {
+		printf("Error closing archive: %s, %s\n", archivename, mz_zip_get_error_string(archive.m_last_error));				
+	}
+
+	if (success) {
+		printf("Archived map '%s' successfully: %u files added, %u could not be found.\n", bspname, dep_success, dep_missing);
+	}
+	else {
+		printf("Failed archiving map '%s'\n", bspname);
+		remove(archivename);
+		rc = EXIT_FAILURE;
+	}	
 exit:
 	stream = NULL;
 	if (ents) free(ents);
-	if (dependency_list) buf_clear(dependency_list);
+	if (dependency_list) {
+		for(size_t i = 0; i < ndeps; ++i) {
+			if(dependency_list[i]) {
+				free(dependency_list[i]);
+				dependency_list[i] = NULL;
+			}
+		}
+		buf_clear(dependency_list);
+	}
 	return rc;
 }

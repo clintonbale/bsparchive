@@ -4,7 +4,9 @@
 #define COUNT_OF(x) ((sizeof(x)/sizeof(0[x])) / ((size_t)(!(sizeof(x) % sizeof(0[x])))))
 
 #ifdef _WIN32
+#include <windows.h>
 #define strcasecmp _stricmp
+#define chdir SetCurrentDirectory
 #endif
 
 void fatal(char* fmt, ...);
