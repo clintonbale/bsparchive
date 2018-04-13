@@ -116,8 +116,7 @@ void parse_bsp_ent_value(char* key, char* value) {
 	}
 	else if (strcmp(key, "wad") == 0) {
 		if (valid_resource_format(extension)) {
-			//TODO: option: add fullpath wad dependencies
-			//add_dependency(value);
+			// ...
 		}
 		char* last_path = strrchr(value, '/');
 		if(last_path != NULL) {
@@ -129,7 +128,7 @@ void parse_bsp_ent_value(char* key, char* value) {
 		}
 	}
 	else if (is_speak_key(key)) {
-		// TODO: handle speak sentences
+		// ...
 		printf("Speak sentence: %s", value);
 	}
 	else if (extension) {
