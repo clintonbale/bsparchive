@@ -22,10 +22,10 @@ Identifies and archives all dependencies for bsp files.
 
 Example usage:
 
-`bsparchive.exe -o output "C:\Games\Steam\steamapps\common\Half-Life\tfc\test`
+`bsparchive.exe -o output "C:\Games\Steam\steamapps\common\Half-Life\tfc\maps"`
 
-Outputs the archived zip files containing all dependencies to the output folder
-in the current directory.
+Outputs the archived zip files containing required dependencies for all the bsp files
+in the tfc maps folder to the `output` folder in the current directory.
 
 ## Limitations
 
