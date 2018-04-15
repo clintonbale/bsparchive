@@ -87,6 +87,19 @@ void add_dependency(char* value) {
 	}
 }
 
+void free_dependency_list() {
+	if (dependency_list) {
+		size_t ndeps = buf_len(dependency_list);
+		for (size_t i = 0; i < ndeps; ++i) {
+			if (dependency_list[i]) {
+				free(dependency_list[i]);
+				dependency_list[i] = NULL;
+			}
+		}
+		buf_clear(dependency_list);
+	}
+}
+
 void parse_bsp_ent_value(char* key, char* value) {
 	static char temp[ENT_MAX_VALUE];
 	temp[0] = 0;
@@ -196,30 +209,6 @@ char* get_full_path(const char* dependency, const char* gamedir) {
 	return full_path;
 }
 
-int archive_bsp_dir(const char* input, const char* output, const char* gamedir) {
-	//TODO: enum on exit statuses
-	tinydir_dir dir;
-	tinydir_file file;
-	if (tinydir_open(&dir, input) != 0) {
-		printf("Error opening directory %s\n", input);
-		return EXIT_FAILURE;
-	}
-
-	assert(dir.has_next > 0);
-
-	printf("Archiving map directory %s\n", input);
-	
-	while (dir.has_next) {
-		tinydir_readfile(&dir, &file);
-		if (strncmp(file.extension, "bsp", 3) == 0) {
-			archive_bsp(file.path, output, gamedir);
-		}
-		tinydir_next(&dir);
-	}
-	tinydir_close(&dir);
-
-	return EXIT_SUCCESS;
-}
 
 void add_base_dependencies(const char* bspname) {
 	char temp[MAX_PATH];
@@ -239,7 +228,7 @@ void add_base_dependencies(const char* bspname) {
 	add_dependency(temp);
 }
 
-void get_bsp_name(const char* bsp_path, char* bspname) {
+bool get_bsp_name(const char* bsp_path, char* bspname) {
 	size_t path_len = strlen(bsp_path);
 	const char* last = &bsp_path[path_len];
 	
@@ -250,27 +239,18 @@ void get_bsp_name(const char* bsp_path, char* bspname) {
 		}
 	}
 	if (last == bsp_path)
-		return;
+		return false;
 
 	// we only want the bsp name so get rid of the extension
 	size_t file_len = path_len - (last - bsp_path) - 4;
 	strncpy(bspname, last, file_len);
 	bspname[file_len] = 0;
+	return true;
 }
 
-int archive_bsp(const char* bsp_path, const char* output_path, const char* gamedir) {
-	//TODO: enum on exit statuses
+int bsp_get_deps(const char* bsp_path, const char* bspname) {
+	free_dependency_list();
 	int rc = EXIT_SUCCESS;
-	char bspname[MAX_PATH], archivename[MAX_PATH];
-
-	get_bsp_name(bsp_path, bspname);
-	if(g_verbose) {
-		printf("Processing map: %s\n", bsp_path);
-	}
-	else {
-		printf("Processing map: %s.bsp\n", bspname);
-	}
-
 	add_base_dependencies(bspname);
 
 	char* ents = bsp_open_entities(bsp_path);
@@ -280,6 +260,84 @@ int archive_bsp(const char* bsp_path, const char* output_path, const char* gamed
 	}
 	stream = ents;
 	bsp_read_entities(parse_bsp_ent_value);
+exit:
+	stream = NULL;
+	if(ents) free(ents);
+	return rc;
+}
+
+int archive_print_deps(const char* bsp_path) {
+	char bspname[MAX_PATH];
+
+	if(!get_bsp_name(bsp_path, bspname)) {
+		printf("Error getting bsp name from path %s", bsp_path);
+		return EXIT_FAILURE;
+	}
+	bsp_get_deps(bsp_path, bspname);
+
+	size_t ndeps = buf_len(dependency_list);
+	for (size_t i = 0; i < ndeps; ++i) {
+		const char* dep = dependency_list[i];
+
+		if(hashtable_contains(exclude_table, dep)) {
+			printf("// %s\n", dep);
+		}
+		else {
+			printf("%s\n", dep);
+		}
+	}
+	printf("// %s.bsp - %u total dependencies", bspname, buf_len(dependency_list));
+
+	free_dependency_list();
+	return EXIT_SUCCESS;
+}
+
+int archive_bsp_dir(const char* input_dir, const char* output_path, const char* gamedir) {
+	//TODO: enum on exit statuses
+	tinydir_dir dir;
+	tinydir_file file;
+	if (tinydir_open(&dir, input_dir) != 0) {
+		printf("Error opening directory %s\n", input_dir);
+		return EXIT_FAILURE;
+	}
+
+	assert(dir.has_next > 0);
+
+	printf("Archiving map directory %s\n", input_dir);
+
+	while (dir.has_next) {
+		tinydir_readfile(&dir, &file);
+		if (strncmp(file.extension, "bsp", 3) == 0) {
+			archive_bsp(file.path, output_path, gamedir);
+		}
+		tinydir_next(&dir);
+	}
+	tinydir_close(&dir);
+
+	return EXIT_SUCCESS;
+}
+
+int archive_bsp(const char* bsp_path, const char* output_path, const char* gamedir) {
+	//TODO: enum on exit statuses
+	int rc = EXIT_SUCCESS;
+	char bspname[MAX_PATH], archivename[MAX_PATH];
+
+	if(!get_bsp_name(bsp_path, bspname)) {
+		printf("Error getting bsp name from path %s", bsp_path);
+		rc = EXIT_FAILURE;
+		goto exit;
+	}
+	if(g_verbose) {
+		printf("Processing map: %s\n", bsp_path);
+	}
+	else {
+		printf("Processing map: %s.bsp\n", bspname);
+	}
+
+	if(bsp_get_deps(bsp_path, bspname)) {
+		rc = EXIT_FAILURE;
+		goto exit;
+	}
 	
 	strcpy(archivename, bspname);
 	strcat(archivename, ".zip");
@@ -341,15 +399,6 @@ int archive_bsp(const char* bsp_path, const char* output_path, const char* gamed
 	}	
 exit:
 	stream = NULL;
-	if (ents) free(ents);
-	if (dependency_list) {
-		for(size_t i = 0; i < ndeps; ++i) {
-			if(dependency_list[i]) {
-				free(dependency_list[i]);
-				dependency_list[i] = NULL;
-			}
-		}
-		buf_clear(dependency_list);
-	}
+	free_dependency_list();
 	return rc;
 }

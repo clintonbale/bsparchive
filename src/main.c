@@ -15,7 +15,7 @@
 bool g_verbose;
 hash_table* exclude_table;
 
-static struct arg_lit *a_verbose, *a_help, *a_version;
+static struct arg_lit *a_verbose, *a_help, *a_version, *a_depsonly;
 static struct arg_file *a_gamedir, *a_file, *a_output;
 static struct arg_end *end;
 
@@ -128,8 +128,9 @@ int main(int argc, char* argv[]) {
 		a_help = arg_litn("h", "help", 0, 1, "print this help and exit"),
 		a_verbose = arg_litn("v", "verbose", 0, 1, "verbose output"),
 		a_version = arg_litn("V", "version", 0, 1, "print version information and exit"),
+		a_depsonly = arg_litn("d", "justdeps", 0, 1, "output only the list of dependencies for the input bsp"),
 		a_gamedir = arg_filen("g", "gamedir", "<PATH>", 0, 1, "the game directory"),
-		a_output = arg_filen("o", "output", "<PATH>", 1, 1, "where to output the zip files"),
+		a_output = arg_filen("o", "output", "<PATH>", 0, 1, "where to output the zip files"),
 		a_file = arg_filen(NULL, NULL, "<PATH>", 1, 1, "bsp files or map directories"),
 		end = arg_end(20),
 	};
@@ -164,21 +165,13 @@ int main(int argc, char* argv[]) {
 	}
 
 	g_verbose = a_verbose->count > 0;
-
+	
 	assert(a_file->count == 1);
-	assert(a_output->count == 1);
 	assert(a_gamedir->count <= 1);
 
 	const char* input = a_file->filename[0];
-	const char* output = a_output->filename[0];
 	const char* gamedir = NULL;
-
-	if (!is_valid_dir(output)) {
-		printf("Missing or invalid output directory location: %s\n", output);
-		rc = EXIT_FAILURE;
-		goto exit;
-	}
-
+	
 	bool is_input_dir = false;
 
 	if (is_valid_dir(input)) {
@@ -194,6 +187,32 @@ int main(int argc, char* argv[]) {
 			rc = EXIT_FAILURE;
 			goto exit;
 		}
+	}
+	
+	load_exclude_manifest();
+
+	if(a_depsonly->count > 0) {
+		if(is_input_dir) {
+			printf("justdeps option only valid for single .bsp files\n");
+			rc = EXIT_FAILURE;
+			goto exit;
+		}
+		rc = archive_print_deps(input);
+		goto exit;
+	}
+	
+	if(a_output->count < 1) {
+		printf("You must specify an output directory using -o\n");
+		rc = EXIT_FAILURE;
+		goto exit;
+	}
+
+	const char* output = a_output->filename[0];
+
+	if (!is_valid_dir(output)) {
+		printf("Missing or invalid output directory location: %s\n", output);
+		rc = EXIT_FAILURE;
+		goto exit;
 	}
 	
 	if (a_gamedir->count == 1) {
@@ -222,16 +241,13 @@ int main(int argc, char* argv[]) {
 	if(g_verbose) {
 		printf("Game directory: %s\n", gamedir);
 	}
-
-	load_exclude_manifest();
-
+	
 	if(is_input_dir) {
 		rc = archive_bsp_dir(input, output, gamedir);
 	}
 	else {
 		rc = archive_bsp(input, output, gamedir);
 	}
-
 exit:
 	arg_freetable(argtable, COUNT_OF(argtable));
 	return rc;
