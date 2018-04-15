@@ -13,9 +13,11 @@
 #pragma warning(pop)
 
 bool g_verbose;
+bool g_noexclude;
+
 hash_table* exclude_table;
 
-static struct arg_lit *a_verbose, *a_help, *a_version, *a_depsonly;
+static struct arg_lit *a_verbose, *a_help, *a_version, *a_depsonly, *a_noexclude;
 static struct arg_file *a_gamedir, *a_file, *a_output;
 static struct arg_end *end;
 
@@ -129,6 +131,7 @@ int main(int argc, char* argv[]) {
 		a_verbose = arg_litn("v", "verbose", 0, 1, "verbose output"),
 		a_version = arg_litn("V", "version", 0, 1, "print version information and exit"),
 		a_depsonly = arg_litn("d", "justdeps", 0, 1, "output only the list of dependencies for the input bsp"),
+		a_noexclude = arg_litn("s", "noexclude", 0, 1, "files in exclusion list are included"),
 		a_gamedir = arg_filen("g", "gamedir", "<PATH>", 0, 1, "the game directory"),
 		a_output = arg_filen("o", "output", "<PATH>", 0, 1, "where to output the zip files"),
 		a_file = arg_filen(NULL, NULL, "<PATH>", 1, 1, "bsp files or map directories"),
@@ -165,6 +168,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	g_verbose = a_verbose->count > 0;
+	g_noexclude = a_noexclude->count > 0;
 	
 	assert(a_file->count == 1);
 	assert(a_gamedir->count <= 1);

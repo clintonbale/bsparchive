@@ -279,7 +279,7 @@ int archive_print_deps(const char* bsp_path) {
 	for (size_t i = 0; i < ndeps; ++i) {
 		const char* dep = dependency_list[i];
 
-		if(hashtable_contains(exclude_table, dep)) {
+		if(g_noexclude == false && hashtable_contains(exclude_table, dep)) {
 			printf("// %s\n", dep);
 		}
 		else {
@@ -363,7 +363,7 @@ int archive_bsp(const char* bsp_path, const char* output_path, const char* gamed
 		void* data = NULL;
 		size_t data_len = 0;
 		
-		if(hashtable_contains(exclude_table, dep_name)) {
+		if(g_noexclude == false && hashtable_contains(exclude_table, dep_name)) {
 			if(g_verbose) printf("Skipping: %s\n", dep_name);
 			dep_skipped++;
 		}
