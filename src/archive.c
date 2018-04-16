@@ -36,12 +36,17 @@ const char* const gfx_sides[] = {
 const char* const speak_keys[] = {
 	"speak",
 	"team_speak",
+	"non_team_speak",
+	"owners_team_speak",
+	"non_owners_team_speak",
+	"ap_speak",
+	"mpg_speak",
 };
 
 bool valid_resource_format(const char* fmt) {
 	if (fmt != NULL) {
 		for (int i = 0; i < COUNT_OF(formats); i++) {
-			if (strcmp(fmt, formats[i]) == 0) {
+			if (strcasecmp(fmt, formats[i]) == 0) {
 				return true;
 			}
 		}
@@ -51,7 +56,7 @@ bool valid_resource_format(const char* fmt) {
 
 bool is_speak_key(const char* key) {
 	for (int i = 0; i < COUNT_OF(speak_keys); i++) {
-		if (strcmp(key, speak_keys[i]) == 0) {
+		if (strcasecmp(key, speak_keys[i]) == 0) {
 			return true;
 		}
 	}
@@ -75,7 +80,7 @@ bool normalize_value(char* value) {
 	return true;
 }
 
-void add_dependency(char* value) {
+void add_dependency(const char* value) {
 	for (size_t i = 0; i < buf_len(dependency_list); ++i) {
 		if (strcmp(dependency_list[i], value) == 0)
 			return;
@@ -100,6 +105,55 @@ void free_dependency_list() {
 	}
 }
 
+void parse_sentence(const char* sentence) {
+	assert(sentence != NULL);
+	if (sentence && sentence[0] != '!' && sentence[0] != '#') {
+		char dep_path[MAX_PATH] = "sound/";
+
+		size_t sentence_len = strlen(sentence);
+		if (strstr(sentence, ".wav") - sentence == sentence_len - 4) {
+			add_dependency(sentence);
+			return;
+		}
+
+		char* start = strchr(sentence, '(');
+		while (start) {
+			char* end = strchr(start, ')');
+			if (end) {
+				memset(start, ' ', end - start + 1);
+			}
+			start = strchr(end, '(');
+		}
+		
+		char* slash = strchr(sentence, '/');
+		if (slash) {
+			strncat(dep_path, sentence, slash - sentence + 1);
+			start = slash + 1;
+		}
+		else {
+			strcat(dep_path, "vox/");
+			start = sentence;
+		}
+
+		size_t spn = strcspn(start, "\t\r\n<>:\"\\|?*");
+		while (start[spn]) {
+			start[spn] = ' ';
+			spn = strcspn(start, "\t\r\n.<>:\"\\|?*");
+		}
+
+		size_t end_dep_len = strlen(dep_path);
+
+		char* token = strtok(start, " ");
+		while (token) {
+			dep_path[end_dep_len] = 0;
+			strcat(dep_path, token);
+			strcat(dep_path, ".wav");
+			add_dependency(dep_path);
+			token = strtok(NULL, " ");
+		}
+	}
+}
+
 void parse_bsp_ent_value(char* key, char* value) {
 	static char temp[ENT_MAX_VALUE];
 	temp[0] = 0;
@@ -116,7 +170,7 @@ void parse_bsp_ent_value(char* key, char* value) {
 	}
 
 	char* extension = strrchr(value, '.');
-	if (strcmp(key, "skyname") == 0) {
+	if (strcasecmp(key, "skyname") == 0) {
 		strcat(temp, "gfx/env/");
 		strcat(temp, value);
 
@@ -127,10 +181,7 @@ void parse_bsp_ent_value(char* key, char* value) {
 			add_dependency(temp);
 		}
 	}
-	else if (strcmp(key, "wad") == 0) {
-		if (valid_resource_format(extension)) {
-			// ...
-		}
+	else if (strcasecmp(key, "wad") == 0) {
 		char* last_path = strrchr(value, '/');
 		if(last_path != NULL) {
 			last_path++;
@@ -141,8 +192,7 @@ void parse_bsp_ent_value(char* key, char* value) {
 		}
 	}
 	else if (is_speak_key(key)) {
-		// ...
-		printf("Speak sentence: %s", value);
+		parse_sentence(value);
 	}
 	else if (extension) {
 		if (valid_resource_format(extension)) {
@@ -307,7 +357,7 @@ int archive_bsp_dir(const char* input_dir, const char* output_path, const char* 
 
 	while (dir.has_next) {
 		tinydir_readfile(&dir, &file);
-		if (strncmp(file.extension, "bsp", 3) == 0) {
+		if (strncasecmp(file.extension, "bsp", 3) == 0) {
 			archive_bsp(file.path, output_path, gamedir);
 		}
 		tinydir_next(&dir);
@@ -344,7 +394,7 @@ int archive_bsp(const char* bsp_path, const char* output_path, const char* gamed
 
 	chdir(output_path);
 	remove(archivename);
-
+		
 	mz_zip_archive archive = { 0 };
 	// create the archive
 	if(!mz_zip_writer_init_file_v2(&archive, archivename, 0, MZ_BEST_COMPRESSION)) {
@@ -359,7 +409,7 @@ int archive_bsp(const char* bsp_path, const char* output_path, const char* gamed
 	for (size_t i = 0; i < ndeps; ++i) {
 		char* dep_name = dependency_list[i];
 		char* fullpath = get_full_path(dep_name, gamedir);
-
+		
 		void* data = NULL;
 		size_t data_len = 0;
 		

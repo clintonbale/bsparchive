@@ -6,6 +6,7 @@
 #ifdef _WIN32
 #include <windows.h>
 #define strcasecmp _stricmp
+#define strncasecmp _strnicmp
 #define chdir SetCurrentDirectory
 #endif
 

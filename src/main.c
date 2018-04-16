@@ -181,7 +181,7 @@ int main(int argc, char* argv[]) {
 	if (is_valid_dir(input)) {
 		is_input_dir = true;
 	} else {
-		if(strncmp(a_file->extension[0], ".bsp", 3) != 0) {
+		if(strncasecmp(a_file->extension[0], ".bsp", 3) != 0) {
 			printf("Invalid file: %s\nOnly .bsp files supported for archival.", input);
 			rc = EXIT_FAILURE;
 			goto exit;
