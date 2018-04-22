@@ -24,7 +24,10 @@ char* bsp_open_entities(const char* path) {
 		goto exit;
 	};
 	// only gold source supported
-	assert(header.version == 30);
+	if(header.version != 30) {
+		printf("Unsupported map type %d, expected 30\n", header.version);
+		goto exit;
+	}
 
 	bsplump entities_lump = header.lump[LUMP_ENTITIES];
 	assert(entities_lump.offset > 0);

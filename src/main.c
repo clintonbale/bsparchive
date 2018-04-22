@@ -10,6 +10,7 @@
 #pragma warning(push, 0)  
 #include "argtable3.h"
 #include "tinydir.h"
+#include "miniz.h"
 #pragma warning(pop)
 
 bool g_verbose;
@@ -134,14 +135,12 @@ int main(int argc, char* argv[]) {
 		a_noexclude = arg_litn("s", "noexclude", 0, 1, "files in exclusion list are included"),
 		a_gamedir = arg_filen("g", "gamedir", "<PATH>", 0, 1, "the game directory"),
 		a_output = arg_filen("o", "output", "<PATH>", 0, 1, "where to output the zip files"),
-		a_file = arg_filen(NULL, NULL, "<PATH>", 1, 1, "bsp files or map directories"),
+		a_file = arg_filen(NULL, NULL, "<PATH>", 1, 1, "bsp file or map directories"),
 		end = arg_end(20),
 	};
 
 	int rc;
-
-	int nerrors;
-	nerrors = arg_parse(argc, argv, argtable);
+	const int nerrors = arg_parse(argc, argv, argtable);
 
 	if (a_help->count > 0)
 	{
