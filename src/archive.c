@@ -401,7 +401,7 @@ int archive_bsp(const char* bsp_path, const char* output_path, const char* gamed
 	}
 
 	if (bsp_get_deps(bsp_path, bspname)) {
-		printf("Skipping '%s.bsp': Dependencies could not be read.", bspname);
+		printf("Skipping '%s.bsp': Dependencies could not be read.\n", bspname);
 		rc = EXIT_FAILURE;
 		goto exit;
 	}
