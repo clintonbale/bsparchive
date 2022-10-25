@@ -38,7 +38,7 @@ inline bool expect_token(EntityTokenType type) {
 		return true;
 	}
 	else {
-		fatal("Expected token");
+		printf("Error: failed parsing entity token near:\n\n%.200s\n\n", stream-100);
 		return false;
 	}
 }

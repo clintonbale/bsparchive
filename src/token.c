@@ -8,9 +8,38 @@
 const char* stream;
 EntityToken token;
 
+bool string_token_end() {
+	const char* s = stream;
+
+	if (*s != '"')
+		return FALSE;
+
+	// spaces after quote is end of value
+	if (isspace(*(s + 1)))
+		return TRUE;
+
+	// comments immediately after quote is end only if no quote before newline
+	if (*(s + 1) == '/' && *(s + 2) == '/') {
+		while (*s != '\n' && *s != '\r') {
+			if (*s++ == '"')
+				return TRUE;
+		}
+	}
+
+	return FALSE;
+}
+
 void next_token(void) {
 repeat:
 	switch (*stream) {
+	case '/':
+		assert(*(stream + 1) == '/');
+
+		while (*stream != '\n' && *stream != '\r') {
+			stream++;
+		}
+		goto repeat;
+		break;
 	case ' ': case '\n': case '\r': case '\t': case '\v':
 		while (isspace(*stream)) {
 			stream++;
@@ -18,17 +47,17 @@ repeat:
 		}
 		goto repeat;
 		break;
-	case '{':
+	case '{': case '(':
 		token.type = TOKEN_BEGIN_ENT;
 		stream++;
 		break;
-	case '}':
+	case '}': case ')':
 		token.type = TOKEN_END_ENT;
 		stream++;
 		break;
 	case '"': {
 		const char* start = ++stream;
-		while (*stream != '"') {
+		while (!string_token_end()) {
 			stream++;
 		}
 		token.start = start;
@@ -43,6 +72,7 @@ repeat:
 	default:
 		//fatal("Unexpected token type: %c", *stream);
 		stream++;
+		goto repeat;
 		break;
 	}
 }

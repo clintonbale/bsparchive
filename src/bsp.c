@@ -84,7 +84,8 @@ void bsp_read_entities(bsp_entity_reader reader) {
 			strncpy(key, token.start, key_len);
 			key[key_len] = 0;
 			
-			expect_token(TOKEN_STR);
+			if (!expect_token(TOKEN_STR))
+				return;
 			
 			size_t value_len = min(token.end - token.start, ENT_MAX_VALUE);
 			assert(value_len >= 0);
@@ -95,6 +96,7 @@ void bsp_read_entities(bsp_entity_reader reader) {
 			bsp_read_ent_values(reader, key, value);
 			next_token();
 		}
-		expect_token(TOKEN_END_ENT);
+		if(!expect_token(TOKEN_END_ENT))
+			return;
 	}
 }
