@@ -9,15 +9,18 @@ archives.
 Overview of options below:
 
 ```
-Usage: bsparchive [-hvV] [-g <PATH>] -o <PATH> <PATH>
+Usage: bsparchive [-hvVdns] [-g <PATH>] [-o <PATH>] <PATH>
 Identifies and archives all dependencies for bsp files.
 
   -h, --help                print this help and exit
   -v, --verbose             verbose output
   -V, --version             print version information and exit
+  -d, --justdeps            output only the list of dependencies for the input bsp
+  -n, --nooverwrite         dont overwrite zip files in the output directory
+  -s, --noexclude           files in exclusion list are included
   -g, --gamedir=<PATH>      the game directory
   -o, --output=<PATH>       where to output the zip files
-  <PATH>                    bsp files or map directories
+  <PATH>                    bsp file or map directories
 ```
 
 Example usage:
