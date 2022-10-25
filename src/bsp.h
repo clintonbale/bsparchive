@@ -1,5 +1,6 @@
 #pragma once
 #include <stdint.h>
+#include <stdbool.h>
 
 typedef struct bsplump {
 	int32_t offset;
@@ -18,4 +19,4 @@ typedef struct bspheader {
 typedef void(*bsp_entity_reader)(char*, char*);
 
 char* bsp_open_entities(const char* path);
-void bsp_read_entities(bsp_entity_reader reader);
+bool bsp_read_entities(bsp_entity_reader reader);

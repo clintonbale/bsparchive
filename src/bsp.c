@@ -69,7 +69,7 @@ static void bsp_read_ent_values(const bsp_entity_reader reader, char* key, char*
 	}
 }
 
-void bsp_read_entities(bsp_entity_reader reader) {
+bool bsp_read_entities(bsp_entity_reader reader) {
 	assert(reader != NULL);
 
 	char key[ENT_MAX_KEY + 1];
@@ -85,7 +85,7 @@ void bsp_read_entities(bsp_entity_reader reader) {
 			key[key_len] = 0;
 			
 			if (!expect_token(TOKEN_STR))
-				return;
+				return false;
 			
 			size_t value_len = min(token.end - token.start, ENT_MAX_VALUE);
 			assert(value_len >= 0);
@@ -97,6 +97,7 @@ void bsp_read_entities(bsp_entity_reader reader) {
 			next_token();
 		}
 		if(!expect_token(TOKEN_END_ENT))
-			return;
+			return false;
 	}
+	return true;
 }
