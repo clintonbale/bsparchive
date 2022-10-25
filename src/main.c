@@ -15,41 +15,17 @@
 
 bool g_verbose;
 bool g_noexclude;
+bool g_nooverwrite;
 
 hash_table* exclude_table;
 
-static struct arg_lit *a_verbose, *a_help, *a_version, *a_depsonly, *a_noexclude;
+static struct arg_lit *a_verbose, *a_help, *a_version, *a_depsonly, *a_noexclude, *a_nooverwrite;
 static struct arg_file *a_gamedir, *a_file, *a_output;
 static struct arg_end *end;
 
-static const char* const exclude_list[] = {	
+static const char* const exclude_list[] = {
 	#include "../res/goldsrc-manifest.lst"
 };
-
-static bool is_valid_dir(const char* path) {
-	assert(path != NULL);
-	bool valid = false;
-
-	tinydir_dir dir;
-	tinydir_open(&dir, path);
-
-	valid = dir.has_next > 0;
-
-	tinydir_close(&dir);
-	return valid;
-}
-
-static bool is_valid_file(const char* filepath) {
-	assert(filepath != NULL);
-	bool valid = false;
-
-	FILE* file = fopen(filepath, "r");
-	if(file != NULL) {
-		fclose(file);
-		return true;
-	}
-	return false;	
-}
 
 static const char* gamedir_folders[] = {
 	"sound",
@@ -132,6 +108,7 @@ int main(int argc, char* argv[]) {
 		a_verbose = arg_litn("v", "verbose", 0, 1, "verbose output"),
 		a_version = arg_litn("V", "version", 0, 1, "print version information and exit"),
 		a_depsonly = arg_litn("d", "justdeps", 0, 1, "output only the list of dependencies for the input bsp"),
+		a_nooverwrite = arg_litn("n", "nooverwrite", 0, 1, "dont overwrite zip files in the output directory"),
 		a_noexclude = arg_litn("s", "noexclude", 0, 1, "files in exclusion list are included"),
 		a_gamedir = arg_filen("g", "gamedir", "<PATH>", 0, 1, "the game directory"),
 		a_output = arg_filen("o", "output", "<PATH>", 0, 1, "where to output the zip files"),
@@ -168,6 +145,7 @@ int main(int argc, char* argv[]) {
 
 	g_verbose = a_verbose->count > 0;
 	g_noexclude = a_noexclude->count > 0;
+	g_nooverwrite = a_nooverwrite->count > 0;
 	
 	assert(a_file->count == 1);
 	assert(a_gamedir->count <= 1);

@@ -6,6 +6,10 @@
 #include <assert.h>
 #include <stdint.h>
 
+#pragma warning(push, 0)  
+#include "tinydir.h"
+#pragma warning(pop)
+
 void fatal(char* fmt, ...) {
 	va_list args;
 	va_start(args, fmt);
@@ -114,4 +118,29 @@ bool hashtable_contains(hash_table* ht, const char* data) {
 	}
 
 	return false;
+}
+
+bool is_valid_file(const char* filepath) {
+	assert(filepath != NULL);
+	bool valid = false;
+
+	FILE* file = fopen(filepath, "r");
+	if (file != NULL) {
+		fclose(file);
+		return true;
+	}
+	return false;
+}
+
+bool is_valid_dir(const char* path) {
+	assert(path != NULL);
+	bool valid = false;
+
+	tinydir_dir dir;
+	tinydir_open(&dir, path);
+
+	valid = dir.has_next > 0;
+
+	tinydir_close(&dir);
+	return valid;
 }

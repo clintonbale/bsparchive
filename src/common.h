@@ -45,3 +45,6 @@ typedef struct map {
 hash_table* hashtable_create(size_t initial_size);
 void hashtable_add(hash_table* ht, const char* data);
 bool hashtable_contains(hash_table* ht, const char* data);
+
+bool is_valid_file(const char* filepath);
+bool is_valid_dir(const char* path);
