@@ -400,7 +400,7 @@ int archive_bsp(const char* bsp_path, const char* output_path, const char* gamed
 	}
 
 	remove(archivename);
-			
+
 	mz_zip_archive archive = { 0 };
 	// create the archive
 	if(!mz_zip_writer_init_file_v2(&archive, archivename, 0, MZ_BEST_COMPRESSION)) {
