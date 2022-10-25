@@ -70,7 +70,6 @@ repeat:
 		token.type = TOKEN_NULL;
 		break;
 	default:
-		//fatal("Unexpected token type: %c", *stream);
 		stream++;
 		goto repeat;
 		break;
