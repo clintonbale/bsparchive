@@ -241,7 +241,6 @@ exit:
 	return success;
 }
 
-
 char* get_full_path(const char* dependency, const char* gamedir) {
 	static char full_path[MAX_PATH];
 	full_path[0] = 0;
@@ -257,6 +256,21 @@ char* get_full_path(const char* dependency, const char* gamedir) {
 	return full_path;
 }
 
+char* get_full_dl_path(const char* dependency, const char* gamedir) {
+	static char dl_path[MAX_PATH];
+	dl_path[0] = 0;
+
+	strcat(dl_path, gamedir);
+	strcat(dl_path, "_downloads");
+	if (*dependency != '/' && *dependency != '\\') {
+		strcat(dl_path, "/");
+	}
+	strcat(dl_path, dependency);
+
+	assert(strlen(dl_path) < MAX_PATH);
+
+	return dl_path;
+}
 
 void add_base_dependencies(const char* bspname) {
 	char temp[MAX_PATH];
@@ -422,6 +436,7 @@ int archive_bsp(const char* bsp_path, const char* output_path, const char* gamed
 	for (size_t i = 0; i < ndeps; ++i) {
 		char* dep_name = dependency_list[i];
 		char* fullpath = get_full_path(dep_name, gamedir);
+		char* dlpath = get_full_dl_path(dep_name, gamedir);
 		
 		void* data = NULL;
 		size_t data_len = 0;
@@ -430,7 +445,7 @@ int archive_bsp(const char* bsp_path, const char* output_path, const char* gamed
 			if(g_verbose) printf("Skipping: %s\n", dep_name);
 			dep_skipped++;
 		}
-		else if (read_dependency(fullpath, &data, &data_len)) {
+		else if (read_dependency(fullpath, &data, &data_len) || read_dependency(dlpath, &data, &data_len)) {
 			if(!mz_zip_writer_add_mem_ex(&archive, dep_name, data, data_len, NULL, 0, MZ_BEST_COMPRESSION, 0, 0)) {
 				printf("Error adding file to archive: %s, %s\n", dep_name, mz_zip_get_error_string(archive.m_last_error));
 			}
