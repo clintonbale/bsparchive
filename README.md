@@ -1,5 +1,7 @@
 # bsparchive
 
+![MSBuild](https://github.com/clintonbale/bsparchive/actions/workflows/msbuild.yml/badge.svg)
+
 A tool used to backup the `maps` directory of GoldSrc engine games by
 finding all dependencies for each bsp file and zipping them up into individual
 archives.
