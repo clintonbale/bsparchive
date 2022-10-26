@@ -394,7 +394,7 @@ int archive_bsp(const char* bsp_path, const char* output_path, const char* gamed
 
 	chdir(output_path);
 
-	if (g_nooverwrite && is_valid_file(archivename)) {
+	if (!g_overwrite && is_valid_file(archivename)) {
 		printf("Skipping overwrite of existing archive: '%s'\n", archivename);
 		rc = EXIT_SUCCESS;
 		goto exit;
