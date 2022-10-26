@@ -101,7 +101,7 @@ void load_exclude_manifest() {
 
 int main(int argc, char* argv[]) {
 	const char* progname = "bsparchive";
-	const char* version = "0.1";
+	const char* version = "0.2";
 	
 	void *argtable[] = {
 		a_help = arg_litn("h", "help", 0, 1, "print this help and exit"),

@@ -9,14 +9,14 @@ archives.
 Overview of options below:
 
 ```
-Usage: bsparchive [-hvVdns] [-g <PATH>] [-o <PATH>] <PATH>
+Usage: bsparchive [-hvVdfs] [-g <PATH>] [-o <PATH>] <PATH>
 Identifies and archives all dependencies for bsp files.
 
   -h, --help                print this help and exit
   -v, --verbose             verbose output
   -V, --version             print version information and exit
   -d, --justdeps            output only the list of dependencies for the input bsp
-  -n, --nooverwrite         dont overwrite zip files in the output directory
+  -f, --overwrite           overwrite zip files in the output directory
   -s, --noexclude           files in exclusion list are included
   -g, --gamedir=<PATH>      the game directory
   -o, --output=<PATH>       where to output the zip files
@@ -41,9 +41,9 @@ in the tfc maps folder to the `output` folder in the current directory.
 
 ### Windows
 
-Visual Studio 2017 solution can be found in `ide/vs2017`, this is a plug and
+Visual Studio 2022 solution can be found in `ide/vs2022`, this is a plug and
 play solution and should build on any Windows machine that can install Visual
-Studio 2017.
+Studio 2022.
 
 ### Other platforms
 
